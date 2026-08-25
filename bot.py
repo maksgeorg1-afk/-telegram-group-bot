@@ -3,6 +3,7 @@ import asyncio
 import sqlite3
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from datetime import datetime, timedelta, timezone
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
@@ -45,21 +46,43 @@ db = sqlite3.connect(
 
 cursor = db.cursor()
 
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
     user_id INTEGER PRIMARY KEY,
-    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    first_seen TEXT
 )
 """)
+
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS group_members (
     user_id INTEGER PRIMARY KEY,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    joined_at TEXT
 )
 """)
 
+
 db.commit()
+
+
+# =========================
+# TIME
+# =========================
+
+def now_utc():
+    return datetime.now(timezone.utc)
+
+
+def today_start():
+    now = now_utc()
+
+    return datetime(
+        now.year,
+        now.month,
+        now.day,
+        tzinfo=timezone.utc
+    )
 
 
 # =========================
@@ -104,6 +127,140 @@ def admin_keyboard():
 
 
 # =========================
+# ФУНКЦИЯ СТАТИСТИКИ
+# =========================
+
+def get_stats():
+
+    now = now_utc()
+
+    day_ago = now - timedelta(days=1)
+
+    week_ago = now - timedelta(days=7)
+
+    month_ago = now - timedelta(days=30)
+
+
+    # Всего запусков
+    cursor.execute(
+        "SELECT COUNT(*) FROM users"
+    )
+
+    total_users = cursor.fetchone()[0]
+
+
+    # Всего вступлений
+    cursor.execute(
+        "SELECT COUNT(*) FROM group_members"
+    )
+
+    total_members = cursor.fetchone()[0]
+
+
+    # Запуски за сутки
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM users
+        WHERE first_seen >= ?
+        """,
+        (day_ago.isoformat(),)
+    )
+
+    day_users = cursor.fetchone()[0]
+
+
+    # Запуски за неделю
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM users
+        WHERE first_seen >= ?
+        """,
+        (week_ago.isoformat(),)
+    )
+
+    week_users = cursor.fetchone()[0]
+
+
+    # Запуски за месяц
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM users
+        WHERE first_seen >= ?
+        """,
+        (month_ago.isoformat(),)
+    )
+
+    month_users = cursor.fetchone()[0]
+
+
+    # Вступления за сутки
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM group_members
+        WHERE joined_at >= ?
+        """,
+        (day_ago.isoformat(),)
+    )
+
+    day_members = cursor.fetchone()[0]
+
+
+    # Вступления за неделю
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM group_members
+        WHERE joined_at >= ?
+        """,
+        (week_ago.isoformat(),)
+    )
+
+    week_members = cursor.fetchone()[0]
+
+
+    # Вступления за месяц
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM group_members
+        WHERE joined_at >= ?
+        """,
+        (month_ago.isoformat(),)
+    )
+
+    month_members = cursor.fetchone()[0]
+
+
+    # Конверсия
+    if total_users > 0:
+
+        conversion = (
+            total_members / total_users
+        ) * 100
+
+    else:
+
+        conversion = 0
+
+
+    return (
+        total_users,
+        total_members,
+        day_users,
+        day_members,
+        week_users,
+        week_members,
+        month_users,
+        month_members,
+        conversion
+    )
+
+
+# =========================
 # /ADMIN
 # =========================
 
@@ -117,6 +274,7 @@ async def admin(message: Message):
         )
 
         return
+
 
     await message.answer(
         "🛠 Панель управления\n\n"
@@ -134,26 +292,38 @@ async def start(message: Message):
 
     user_id = message.from_user.id
 
+    current_time = now_utc().isoformat()
+
+
     cursor.execute(
         """
-        INSERT OR IGNORE INTO users (user_id)
-        VALUES (?)
+        INSERT OR IGNORE INTO users
+        (user_id, first_seen)
+        VALUES (?, ?)
         """,
-        (user_id,)
+        (
+            user_id,
+            current_time
+        )
     )
+
 
     db.commit()
 
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
+
             [
                 InlineKeyboardButton(
                     text="🚀 Вступить в группу",
                     url=GROUP_LINK
                 )
             ]
+
         ]
     )
+
 
     await message.answer(
         "Привет! 👋\n\n"
@@ -174,45 +344,28 @@ async def chat_member_update(event):
 
         user_id = event.new_chat_member.user.id
 
+        current_time = now_utc().isoformat()
+
+
         cursor.execute(
             """
             INSERT OR IGNORE INTO group_members
-            (user_id)
-            VALUES (?)
+            (user_id, joined_at)
+            VALUES (?, ?)
             """,
-            (user_id,)
+            (
+                user_id,
+                current_time
+            )
         )
 
+
         db.commit()
+
 
         print(
             f"New member: {user_id}"
         )
-
-
-# =========================
-# СТАТИСТИКА
-# =========================
-
-async def show_stats(message):
-
-    cursor.execute(
-        "SELECT COUNT(*) FROM users"
-    )
-
-    bot_users = cursor.fetchone()[0]
-
-    cursor.execute(
-        "SELECT COUNT(*) FROM group_members"
-    )
-
-    members = cursor.fetchone()[0]
-
-    await message.answer(
-        "📊 Статистика\n\n"
-        f"🤖 Запустили бота: {bot_users}\n"
-        f"👥 Зафиксировано вступлений: {members}"
-    )
 
 
 # =========================
@@ -231,55 +384,51 @@ async def stats_button(callback: CallbackQuery):
 
         return
 
+
     await callback.answer()
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM users"
-    )
 
-    bot_users = cursor.fetchone()[0]
+    (
+        total_users,
+        total_members,
+        day_users,
+        day_members,
+        week_users,
+        week_members,
+        month_users,
+        month_members,
+        conversion
+    ) = get_stats()
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM group_members"
-    )
 
-    members = cursor.fetchone()[0]
-
-    await callback.message.answer(
+    text = (
         "📊 Статистика\n\n"
-        f"🤖 Запустили бота: {bot_users}\n"
-        f"👥 Зафиксировано вступлений: {members}"
+
+        "🔵 ВСЁ ВРЕМЯ\n"
+        f"🤖 Запустили бота: {total_users}\n"
+        f"👥 Вступили: {total_members}\n\n"
+
+        "🟢 ПОСЛЕДНИЕ 24 ЧАСА\n"
+        f"🤖 Запустили: {day_users}\n"
+        f"👥 Вступили: {day_members}\n\n"
+
+        "🟡 ПОСЛЕДНИЕ 7 ДНЕЙ\n"
+        f"🤖 Запустили: {week_users}\n"
+        f"👥 Вступили: {week_members}\n\n"
+
+        "🟠 ПОСЛЕДНИЕ 30 ДНЕЙ\n"
+        f"🤖 Запустили: {month_users}\n"
+        f"👥 Вступили: {month_members}\n\n"
+
+        f"📈 Общая конверсия: {conversion:.1f}%"
     )
 
 
-# =========================
-# КНОПКА ССЫЛКА
-# =========================
-
-@dp.callback_query(F.data == "link")
-async def link_button(callback: CallbackQuery):
-
-    if callback.from_user.id != ADMIN_ID:
-
-        await callback.answer(
-            "Нет доступа",
-            show_alert=True
-        )
-
-        return
-
-    await callback.answer()
-
-    link = f"https://t.me/{BOT_USERNAME}?start=promo"
-
-    await callback.message.answer(
-        "🔗 Твоя ссылка:\n\n"
-        f"{link}"
-    )
+    await callback.message.answer(text)
 
 
 # =========================
-# КНОПКА ВСТУПЛЕНИЯ
+# СТАТИСТИКА ВСТУПЛЕНИЙ
 # =========================
 
 @dp.callback_query(F.data == "members")
@@ -294,7 +443,9 @@ async def members_button(callback: CallbackQuery):
 
         return
 
+
     await callback.answer()
+
 
     cursor.execute(
         "SELECT COUNT(*) FROM group_members"
@@ -302,9 +453,43 @@ async def members_button(callback: CallbackQuery):
 
     members = cursor.fetchone()[0]
 
+
     await callback.message.answer(
         "👥 Вступления\n\n"
-        f"Зафиксировано новых вступлений: {members}"
+        f"Всего зафиксировано: {members}"
+    )
+
+
+# =========================
+# ССЫЛКА
+# =========================
+
+@dp.callback_query(F.data == "link")
+async def link_button(callback: CallbackQuery):
+
+    if callback.from_user.id != ADMIN_ID:
+
+        await callback.answer(
+            "Нет доступа",
+            show_alert=True
+        )
+
+        return
+
+
+    await callback.answer()
+
+
+    link = (
+        f"https://t.me/"
+        f"{BOT_USERNAME}"
+        f"?start=promo"
+    )
+
+
+    await callback.message.answer(
+        "🔗 Твоя ссылка:\n\n"
+        f"{link}"
     )
 
 
@@ -324,13 +509,15 @@ async def info_button(callback: CallbackQuery):
 
         return
 
+
     await callback.answer()
+
 
     await callback.message.answer(
         "ℹ️ Информация\n\n"
         "🤖 Бот: @MyGroupJoinBot\n"
         "👥 Группа: @vsedlyaludeyukraina\n\n"
-        "🔗 Основная ссылка:\n"
+        "🔗 Ссылка:\n"
         "https://t.me/MyGroupJoinBot?start=promo"
     )
 
@@ -351,6 +538,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             b"Telegram bot is running"
         )
 
+
     def log_message(self, format, *args):
         pass
 
@@ -364,10 +552,15 @@ def run_web_server():
         )
     )
 
+
     server = HTTPServer(
-        ("0.0.0.0", port),
+        (
+            "0.0.0.0",
+            port
+        ),
         HealthHandler
     )
+
 
     server.serve_forever()
 
@@ -383,6 +576,7 @@ async def main():
         daemon=True
     ).start()
 
+
     if not TOKEN:
 
         print(
@@ -391,13 +585,16 @@ async def main():
 
         return
 
+
     bot = Bot(
         token=TOKEN
     )
 
+
     print(
         "Telegram bot started"
     )
+
 
     await dp.start_polling(bot)
 
