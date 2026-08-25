@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 # =========================
@@ -17,7 +17,6 @@ TOKEN = os.getenv("BOT_TOKEN")
 
 GROUP_LINK = "https://t.me/vsedlyaludeyukraina"
 
-# Твой Telegram ID
 ADMIN_ID = 8207718857
 
 
@@ -40,11 +39,9 @@ db = sqlite3.connect(
 cursor = db.cursor()
 
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS visits (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    source TEXT NOT NULL,
-    UNIQUE(user_id, source)
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY,
+    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
 
@@ -56,24 +53,17 @@ db.commit()
 # =========================
 
 @dp.message(CommandStart())
-async def start(message: Message):
-
-    args = message.text.split(maxsplit=1)
-
-    source = "direct"
-
-    if len(args) > 1:
-        source = args[1][:100]
+async def start(message):
 
     user_id = message.from_user.id
 
+    # Добавляем пользователя только один раз
     cursor.execute(
         """
-        INSERT OR IGNORE INTO visits
-        (user_id, source)
-        VALUES (?, ?)
+        INSERT OR IGNORE INTO users (user_id)
+        VALUES (?)
         """,
-        (user_id, source)
+        (user_id,)
     )
 
     db.commit()
@@ -91,6 +81,7 @@ async def start(message: Message):
 
     await message.answer(
         "Привет! 👋\n\n"
+        "Добро пожаловать!\n"
         "Нажми кнопку ниже, чтобы перейти в нашу группу:",
         reply_markup=keyboard
     )
@@ -101,9 +92,9 @@ async def start(message: Message):
 # =========================
 
 @dp.message(Command("stats"))
-async def stats(message: Message):
+async def stats(message):
 
-    # Проверяем, что команду отправил владелец
+    # Доступ только владельцу
     if message.from_user.id != ADMIN_ID:
 
         await message.answer(
@@ -112,36 +103,16 @@ async def stats(message: Message):
 
         return
 
-    cursor.execute("""
-        SELECT source, COUNT(*)
-        FROM visits
-        GROUP BY source
-        ORDER BY COUNT(*) DESC
-    """)
+    cursor.execute(
+        "SELECT COUNT(*) FROM users"
+    )
 
-    rows = cursor.fetchall()
+    total = cursor.fetchone()[0]
 
-    if not rows:
-
-        await message.answer(
-            "📊 Пока переходов нет."
-        )
-
-        return
-
-    text = "📊 Статистика переходов:\n\n"
-
-    total = 0
-
-    for source, count in rows:
-
-        text += f"🔹 {source}: {count}\n"
-
-        total += count
-
-    text += f"\n👥 Всего: {total}"
-
-    await message.answer(text)
+    await message.answer(
+        f"📊 Статистика\n\n"
+        f"👥 Всего пользователей: {total}"
+    )
 
 
 # =========================
@@ -187,13 +158,11 @@ def run_web_server():
 
 async def main():
 
-    # Запускаем веб-сервер для Render
     Thread(
         target=run_web_server,
         daemon=True
     ).start()
 
-    # Проверяем наличие токена
     if not TOKEN:
 
         print(
