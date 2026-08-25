@@ -13,22 +13,20 @@ GROUP_LINK = "https://t.me/vsedlyaludeyukraina"
 
 dp = Dispatcher()
 
-# ---------- DATABASE ----------
-
 db = sqlite3.connect("stats.db", check_same_thread=False)
 cursor = db.cursor()
 
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY,
-    source TEXT
+CREATE TABLE IF NOT EXISTS visits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    source TEXT NOT NULL,
+    UNIQUE(user_id, source)
 )
 """)
 
 db.commit()
 
-
-# ---------- START ----------
 
 @dp.message(CommandStart())
 async def start(message: Message):
@@ -42,18 +40,11 @@ async def start(message: Message):
     user_id = message.from_user.id
 
     cursor.execute(
-        "SELECT user_id FROM users WHERE user_id = ?",
-        (user_id,)
+        "INSERT OR IGNORE INTO visits (user_id, source) VALUES (?, ?)",
+        (user_id, source)
     )
 
-    exists = cursor.fetchone()
-
-    if not exists:
-        cursor.execute(
-            "INSERT INTO users (user_id, source) VALUES (?, ?)",
-            (user_id, source)
-        )
-        db.commit()
+    db.commit()
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -73,16 +64,12 @@ async def start(message: Message):
     )
 
 
-# ---------- STATISTICS ----------
-
 @dp.message(Command("stats"))
 async def stats(message: Message):
-    # Пока разрешаем статистику только тебе.
-    # ВАЖНО: сюда позже поставим твой Telegram ID.
-    
+
     cursor.execute("""
         SELECT source, COUNT(*)
-        FROM users
+        FROM visits
         GROUP BY source
         ORDER BY COUNT(*) DESC
     """)
@@ -93,7 +80,7 @@ async def stats(message: Message):
         await message.answer("📊 Пока переходов нет.")
         return
 
-    text = "📊 Статистика переходов:\n\n"
+    text = "📊 Статистика:\n\n"
 
     total = 0
 
@@ -105,8 +92,6 @@ async def stats(message: Message):
 
     await message.answer(text)
 
-
-# ---------- WEB SERVER FOR RENDER ----------
 
 class HealthHandler(BaseHTTPRequestHandler):
 
@@ -129,8 +114,6 @@ def run_web_server():
 
     server.serve_forever()
 
-
-# ---------- START BOT ----------
 
 async def main():
 
