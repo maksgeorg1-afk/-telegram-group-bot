@@ -6,12 +6,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart, Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
-
-# =========================
-# НАСТРОЙКИ
-# =========================
 
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -19,10 +15,10 @@ GROUP_LINK = "https://t.me/vsedlyaludeyukraina"
 
 ADMIN_ID = 8207718857
 
+# ID твоей группы
+# Пока оставляем 0 — бот сам попробует определить группу
+GROUP_ID = 0
 
-# =========================
-# TELEGRAM BOT
-# =========================
 
 dp = Dispatcher()
 
@@ -40,8 +36,13 @@ cursor = db.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY,
-    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    user_id INTEGER PRIMARY KEY
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS group_members (
+    user_id INTEGER PRIMARY KEY
 )
 """)
 
@@ -53,16 +54,12 @@ db.commit()
 # =========================
 
 @dp.message(CommandStart())
-async def start(message):
+async def start(message: Message):
 
     user_id = message.from_user.id
 
-    # Добавляем пользователя только один раз
     cursor.execute(
-        """
-        INSERT OR IGNORE INTO users (user_id)
-        VALUES (?)
-        """,
+        "INSERT OR IGNORE INTO users (user_id) VALUES (?)",
         (user_id,)
     )
 
@@ -88,13 +85,35 @@ async def start(message):
 
 
 # =========================
+# НОВЫЙ УЧАСТНИК ГРУППЫ
+# =========================
+
+@dp.chat_member()
+async def new_member(event):
+
+    if event.new_chat_member.status == "member":
+
+        user_id = event.new_chat_member.user.id
+
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO group_members
+            (user_id)
+            VALUES (?)
+            """,
+            (user_id,)
+        )
+
+        db.commit()
+
+
+# =========================
 # /STATS
 # =========================
 
 @dp.message(Command("stats"))
 async def stats(message):
 
-    # Доступ только владельцу
     if message.from_user.id != ADMIN_ID:
 
         await message.answer(
@@ -107,11 +126,18 @@ async def stats(message):
         "SELECT COUNT(*) FROM users"
     )
 
-    total = cursor.fetchone()[0]
+    bot_users = cursor.fetchone()[0]
+
+    cursor.execute(
+        "SELECT COUNT(*) FROM group_members"
+    )
+
+    group_users = cursor.fetchone()[0]
 
     await message.answer(
-        f"📊 Статистика\n\n"
-        f"👥 Всего пользователей: {total}"
+        "📊 Статистика\n\n"
+        f"🤖 Запустили бота: {bot_users}\n"
+        f"👥 Зафиксировано вступлений: {group_users}"
     )
 
 
@@ -165,9 +191,7 @@ async def main():
 
     if not TOKEN:
 
-        print(
-            "ERROR: BOT_TOKEN is not set"
-        )
+        print("ERROR: BOT_TOKEN is not set")
 
         return
 
@@ -175,9 +199,7 @@ async def main():
         token=TOKEN
     )
 
-    print(
-        "Telegram bot started"
-    )
+    print("Telegram bot started")
 
     await dp.start_polling(bot)
 
