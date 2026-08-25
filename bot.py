@@ -6,8 +6,16 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
 
+
+# =========================
+# НАСТРОЙКИ
+# =========================
 
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -15,10 +23,10 @@ GROUP_LINK = "https://t.me/vsedlyaludeyukraina"
 
 ADMIN_ID = 8207718857
 
-# ID твоей группы
-# Пока оставляем 0 — бот сам попробует определить группу
-GROUP_ID = 0
 
+# =========================
+# TELEGRAM BOT
+# =========================
 
 dp = Dispatcher()
 
@@ -36,13 +44,15 @@ cursor = db.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY
+    user_id INTEGER PRIMARY KEY,
+    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS group_members (
-    user_id INTEGER PRIMARY KEY
+    user_id INTEGER PRIMARY KEY,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
 
@@ -50,7 +60,7 @@ db.commit()
 
 
 # =========================
-# /START
+# START
 # =========================
 
 @dp.message(CommandStart())
@@ -59,7 +69,10 @@ async def start(message: Message):
     user_id = message.from_user.id
 
     cursor.execute(
-        "INSERT OR IGNORE INTO users (user_id) VALUES (?)",
+        """
+        INSERT OR IGNORE INTO users (user_id)
+        VALUES (?)
+        """,
         (user_id,)
     )
 
@@ -78,27 +91,28 @@ async def start(message: Message):
 
     await message.answer(
         "Привет! 👋\n\n"
-        "Добро пожаловать!\n"
+        "Добро пожаловать!\n\n"
         "Нажми кнопку ниже, чтобы перейти в нашу группу:",
         reply_markup=keyboard
     )
 
 
 # =========================
-# НОВЫЙ УЧАСТНИК ГРУППЫ
+# ОТСЛЕЖИВАНИЕ НОВЫХ УЧАСТНИКОВ
 # =========================
 
 @dp.chat_member()
-async def new_member(event):
+async def chat_member_update(event):
 
-    if event.new_chat_member.status == "member":
+    new_member = event.new_chat_member
 
-        user_id = event.new_chat_member.user.id
+    if new_member.status == "member":
+
+        user_id = new_member.user.id
 
         cursor.execute(
             """
-            INSERT OR IGNORE INTO group_members
-            (user_id)
+            INSERT OR IGNORE INTO group_members (user_id)
             VALUES (?)
             """,
             (user_id,)
@@ -106,13 +120,17 @@ async def new_member(event):
 
         db.commit()
 
+        print(
+            f"New group member: {user_id}"
+        )
+
 
 # =========================
-# /STATS
+# СТАТИСТИКА
 # =========================
 
 @dp.message(Command("stats"))
-async def stats(message):
+async def stats(message: Message):
 
     if message.from_user.id != ADMIN_ID:
 
@@ -132,12 +150,12 @@ async def stats(message):
         "SELECT COUNT(*) FROM group_members"
     )
 
-    group_users = cursor.fetchone()[0]
+    group_members = cursor.fetchone()[0]
 
     await message.answer(
         "📊 Статистика\n\n"
         f"🤖 Запустили бота: {bot_users}\n"
-        f"👥 Зафиксировано вступлений: {group_users}"
+        f"👥 Зафиксировано новых вступлений: {group_members}"
     )
 
 
@@ -191,7 +209,9 @@ async def main():
 
     if not TOKEN:
 
-        print("ERROR: BOT_TOKEN is not set")
+        print(
+            "ERROR: BOT_TOKEN is not set"
+        )
 
         return
 
@@ -199,7 +219,9 @@ async def main():
         token=TOKEN
     )
 
-    print("Telegram bot started")
+    print(
+        "Telegram bot started"
+    )
 
     await dp.start_polling(bot)
 
