@@ -1,959 +1,1342 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+
+<meta
+    name="viewport"
+    content="width=device-width,
+             initial-scale=1,
+             maximum-scale=1,
+             user-scalable=no"
+>
 
 <title>UA Games</title>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
-*{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
-html,body{
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#080b16;
-    color:white;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    user-select:none;
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #080b14;
+    color: white;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
-body{
-    display:flex;
-    justify-content:center;
-    align-items:center;
+body {
+    display: flex;
+    justify-content: center;
 }
 
-.app{
-    width:100%;
-    max-width:520px;
-    height:100%;
-    min-height:100%;
-    padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
-    display:flex;
-    flex-direction:column;
-    background:
-        radial-gradient(circle at 50% 0%,#26366e 0%,transparent 40%),
-        linear-gradient(180deg,#0b1022,#070914);
+#app {
+    width: 100%;
+    max-width: 520px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
-.header{
-    padding:15px 4px 10px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+.screen {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    display: none;
+    flex-direction: column;
 }
 
-.logo{
-    font-size:24px;
-    font-weight:900;
+.screen.active {
+    display: flex;
 }
 
-.score{
-    background:#151b32;
-    border:1px solid #303b68;
-    border-radius:15px;
-    padding:8px 13px;
-    font-weight:800;
+.title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 900;
+    margin-top: 30px;
+    margin-bottom: 10px;
 }
 
-.screen{
-    flex:1;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
+.subtitle {
+    text-align: center;
+    color: #8f98aa;
+    font-size: 15px;
+    margin-bottom: 25px;
 }
 
-.menu{
-    width:100%;
-    display:flex;
-    flex-direction:column;
-    gap:14px;
+.menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 20px;
 }
 
-.title{
-    text-align:center;
-    font-size:38px;
-    font-weight:1000;
-    margin-bottom:5px;
+.game-card {
+    border: none;
+    border-radius: 24px;
+    min-height: 150px;
+    color: white;
+    font-size: 20px;
+    font-weight: 800;
+    cursor: pointer;
+    background: linear-gradient(
+        145deg,
+        #151b2d,
+        #0e1320
+    );
+    box-shadow:
+        0 12px 30px rgba(0,0,0,.35),
+        inset 0 1px 0 rgba(255,255,255,.06);
 }
 
-.subtitle{
-    text-align:center;
-    color:#9da8ca;
-    margin-bottom:15px;
+.game-card:active {
+    transform: scale(.96);
 }
 
-.game-btn{
-    border:0;
-    border-radius:22px;
-    padding:19px;
-    color:white;
-    font-size:22px;
-    font-weight:900;
-    background:linear-gradient(135deg,#1e2b55,#151b35);
-    box-shadow:0 8px 25px #0006;
-    border:1px solid #34416f;
+.game-icon {
+    display: block;
+    font-size: 55px;
+    margin-bottom: 12px;
 }
 
-.game-btn:active{
-    transform:scale(.96);
+.back {
+    margin-top: auto;
+    border: none;
+    border-radius: 18px;
+    min-height: 54px;
+    color: white;
+    background: #151b2d;
+    font-size: 16px;
+    font-weight: 700;
 }
 
-.hidden{
-    display:none!important;
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
 }
 
-.board-wrap{
-    width:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
+.header button {
+    border: none;
+    background: #151b2d;
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 14px;
+    font-size: 20px;
 }
 
-#snakeBoard{
-    width:min(92vw,430px);
-    aspect-ratio:10/12;
-    display:grid;
-    grid-template-columns:repeat(10,1fr);
-    gap:2px;
-    padding:5px;
-    border-radius:18px;
-    background:#12182c;
-    border:2px solid #303b67;
-    box-shadow:0 15px 40px #0008;
+.game-name {
+    font-size: 24px;
+    font-weight: 900;
 }
 
-.cell{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    border-radius:4px;
-    font-size:clamp(14px,5vw,26px);
-    background:#0b1020;
+.score {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 10px;
 }
 
-.snake{
-    background:#193b2a;
+#snakeCanvas,
+#tetrisCanvas {
+    display: block;
+    margin: auto;
+    background: #0b0f1a;
+    border-radius: 22px;
+    box-shadow:
+        0 15px 45px rgba(0,0,0,.45),
+        inset 0 0 0 1px rgba(255,255,255,.05);
+    touch-action: none;
 }
 
-.food{
-    animation:pulse .55s infinite alternate;
+.tip {
+    text-align: center;
+    color: #7f8899;
+    font-size: 13px;
+    margin-top: 12px;
 }
 
-@keyframes pulse{
-    from{transform:scale(.75)}
-    to{transform:scale(1)}
+.bottom-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
 }
 
-#tetrisBoard{
-    display:grid;
-    grid-template-columns:repeat(10,1fr);
-    width:min(92vw,390px);
-    aspect-ratio:10/16;
-    gap:1px;
-    padding:5px;
-    background:#11172b;
-    border:2px solid #303b67;
-    border-radius:18px;
-    box-shadow:0 15px 40px #0008;
+.bottom-buttons button {
+    flex: 1;
+    min-height: 52px;
+    border: none;
+    border-radius: 17px;
+    color: white;
+    background: #151b2d;
+    font-size: 15px;
+    font-weight: 800;
 }
 
-.tcell{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:3px;
-    font-size:clamp(12px,4.5vw,24px);
-    background:#090e1c;
+.bottom-buttons button:active {
+    transform: scale(.97);
 }
 
-.info{
-    display:flex;
-    justify-content:space-between;
-    width:min(92vw,390px);
-    margin-bottom:8px;
-    color:#aeb9dc;
-    font-weight:800;
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 25px;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(8px);
+    z-index: 20;
 }
 
-.controls-info{
-    text-align:center;
-    color:#8d99bd;
-    margin-top:10px;
-    font-size:13px;
+.overlay.active {
+    display: flex;
 }
 
-.back{
-    margin-top:12px;
-    width:min(92vw,390px);
-    border:0;
-    border-radius:16px;
-    padding:12px;
-    background:#171e37;
-    color:white;
-    font-size:16px;
-    font-weight:800;
+.modal {
+    width: 100%;
+    max-width: 350px;
+    padding: 30px;
+    border-radius: 28px;
+    text-align: center;
+    background: #111726;
+    box-shadow: 0 25px 70px rgba(0,0,0,.6);
 }
 
-.modal{
-    position:fixed;
-    inset:0;
-    background:#0009;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:10;
+.modal-title {
+    font-size: 30px;
+    font-weight: 900;
+    margin-bottom: 10px;
 }
 
-.modal-box{
-    width:calc(100% - 40px);
-    max-width:400px;
-    background:#11172b;
-    border:1px solid #394574;
-    border-radius:25px;
-    padding:25px;
-    text-align:center;
-    box-shadow:0 20px 70px #000;
+.modal-score {
+    font-size: 20px;
+    margin: 15px 0 25px;
+    color: #b6bfd0;
 }
 
-.modal-title{
-    font-size:28px;
-    font-weight:1000;
-    margin-bottom:8px;
+.modal button {
+    width: 100%;
+    min-height: 55px;
+    border: none;
+    border-radius: 17px;
+    color: white;
+    background: #247cff;
+    font-size: 17px;
+    font-weight: 900;
+    margin-top: 10px;
 }
 
-.modal-score{
-    font-size:42px;
-    font-weight:1000;
-    margin:15px 0;
-}
-
-.modal button{
-    width:100%;
-    border:0;
-    border-radius:17px;
-    padding:15px;
-    background:#315cff;
-    color:white;
-    font-size:18px;
-    font-weight:900;
-}
-
-.swipe-area{
-    touch-action:none;
-}
 </style>
+
 </head>
 
 <body>
 
-<div class="app">
+<div id="app">
 
-    <div class="header">
-        <div class="logo">🎮 UA GAMES</div>
-        <div class="score" id="topScore">🏆 0</div>
+<!-- =====================================================
+     ГЛАВНОЕ МЕНЮ
+===================================================== -->
+
+<div
+    id="menu"
+    class="screen active"
+>
+
+    <div class="title">
+        🎮 ИГРОВОЙ ЦЕНТР
     </div>
 
-    <div class="screen">
+    <div class="subtitle">
+        Выбирай игру и устанавливай рекорды 🏆
+    </div>
 
-        <!-- МЕНЮ -->
-        <div id="menu" class="menu">
-            <div class="title">🎮 ИГРЫ</div>
+    <div class="menu-grid">
 
-            <div class="subtitle">
-                Играй прямо на телефоне 👆<br>
-                Управление свайпами
-            </div>
+        <button
+            class="game-card"
+            onclick="openSnake()"
+        >
+            <span class="game-icon">🐍</span>
+            ЗМЕЙКА
+        </button>
 
-            <button class="game-btn" onclick="startSnake()">
-                🐍 ЗМЕЙКА
-            </button>
+        <button
+            class="game-card"
+            onclick="openTetris()"
+        >
+            <span class="game-icon">🧱</span>
+            ТЕТРИС
+        </button>
 
-            <button class="game-btn" onclick="startTetris()">
-                🧱 ТЕТРИС
-            </button>
+    </div>
+
+    <button
+        class="back"
+        onclick="closeApp()"
+    >
+        ✕ Закрыть
+    </button>
+
+</div>
+
+
+<!-- =====================================================
+     ЗМЕЙКА
+===================================================== -->
+
+<div
+    id="snakeScreen"
+    class="screen"
+>
+
+    <div class="header">
+
+        <button onclick="backToMenu()">
+            ←
+        </button>
+
+        <div class="game-name">
+            🐍 ЗМЕЙКА
         </div>
 
+        <button onclick="restartSnake()">
+            🔄
+        </button>
 
-        <!-- ЗМЕЙКА -->
-        <div id="snakeGame" class="hidden swipe-area">
+    </div>
 
-            <div class="info">
-                <span>🐍 ЗМЕЙКА</span>
-                <span id="snakeScore">🏆 0</span>
-            </div>
+    <div
+        id="snakeScore"
+        class="score"
+    >
+        🏆 0
+    </div>
 
-            <div class="board-wrap">
-                <div id="snakeBoard"></div>
-            </div>
+    <canvas
+        id="snakeCanvas"
+    ></canvas>
 
-            <div class="controls-info">
-                👆 Свайп в любую сторону для управления
-            </div>
+    <div class="tip">
+        👆 Свайпай по экрану, чтобы управлять змейкой
+    </div>
 
-            <button class="back" onclick="showMenu()">
-                🎮 Вернуться в игры
-            </button>
+    <div class="bottom-buttons">
 
-        </div>
+        <button onclick="pauseSnake()">
+            ⏸ Пауза
+        </button>
 
-
-        <!-- ТЕТРИС -->
-        <div id="tetrisGame" class="hidden swipe-area">
-
-            <div class="info">
-                <span>🧱 ТЕТРИС</span>
-                <span id="tetrisScore">🏆 0</span>
-            </div>
-
-            <div class="board-wrap">
-                <div id="tetrisBoard"></div>
-            </div>
-
-            <div class="controls-info">
-                👈👉 движение • 👆 свайп вниз — ускорение<br>
-                🔄 тап — поворот • ⬇️ длинный свайп вниз — сброс
-            </div>
-
-            <button class="back" onclick="showMenu()">
-                🎮 Вернуться в игры
-            </button>
-
-        </div>
+        <button onclick="restartSnake()">
+            🔄 Новая игра
+        </button>
 
     </div>
 
 </div>
 
 
-<div id="modal" class="modal hidden">
-    <div class="modal-box">
+<!-- =====================================================
+     ТЕТРИС
+===================================================== -->
 
-        <div class="modal-title" id="modalTitle">
-            💥 ИГРА ОКОНЧЕНА
+<div
+    id="tetrisScreen"
+    class="screen"
+>
+
+    <div class="header">
+
+        <button onclick="backToMenu()">
+            ←
+        </button>
+
+        <div class="game-name">
+            🧱 ТЕТРИС
         </div>
 
-        <div id="modalText">
-            Твой результат:
-        </div>
-
-        <div class="modal-score" id="modalScore">
-            0
-        </div>
-
-        <button onclick="closeModal()">
-            🔄 Играть снова
+        <button onclick="restartTetris()">
+            🔄
         </button>
 
     </div>
+
+    <div
+        id="tetrisScore"
+        class="score"
+    >
+        🏆 0
+    </div>
+
+    <canvas
+        id="tetrisCanvas"
+    ></canvas>
+
+    <div class="tip">
+        👈 👉 свайп — движение · 👆 тап — поворот
+    </div>
+
+    <div class="bottom-buttons">
+
+        <button onclick="softDrop()">
+            ⬇️ Быстрее
+        </button>
+
+        <button onclick="hardDrop()">
+            ⏬ Сброс
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     GAME OVER
+===================================================== -->
+
+<div
+    id="gameOver"
+    class="overlay"
+>
+
+    <div class="modal">
+
+        <div
+            id="gameOverTitle"
+            class="modal-title"
+        >
+            💥 ИГРА ОКОНЧЕНА
+        </div>
+
+        <div
+            id="gameOverScore"
+            class="modal-score"
+        >
+            Очки: 0
+        </div>
+
+        <button onclick="restartCurrentGame()">
+            🔄 Играть снова
+        </button>
+
+        <button
+            onclick="closeGameOver()"
+            style="background:#20283b"
+        >
+            🎮 Выбрать игру
+        </button>
+
+    </div>
+
+</div>
+
 </div>
 
 
 <script>
 
-/* =====================================================
-   TELEGRAM
-===================================================== */
+const tg = window.Telegram?.WebApp;
 
-if(window.Telegram && Telegram.WebApp){
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
+if (tg) {
+
+    tg.ready();
+    tg.expand();
+
+    try {
+        tg.setHeaderColor("#080b14");
+        tg.setBackgroundColor("#080b14");
+    } catch(e) {}
+
 }
 
 
-/* =====================================================
+/* ======================================================
    ОБЩЕЕ
-===================================================== */
+====================================================== */
 
-let currentGame=null;
+function showScreen(id) {
 
-function hideAll(){
+    document
+        .querySelectorAll(".screen")
+        .forEach(screen => {
+            screen.classList.remove("active");
+        });
 
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("snakeGame").classList.add("hidden");
-    document.getElementById("tetrisGame").classList.add("hidden");
+    document
+        .getElementById(id)
+        .classList.add("active");
 }
 
-function showMenu(){
 
-    stopSnake();
-    stopTetris();
+function closeApp() {
 
-    hideAll();
-
-    document.getElementById("menu").classList.remove("hidden");
-
-    document.getElementById("topScore").textContent="🏆 0";
-
-    currentGame=null;
-}
-
-function setTopScore(score){
-
-    document.getElementById("topScore").textContent="🏆 "+score;
-}
-
-function gameOver(title,score){
-
-    document.getElementById("modalTitle").textContent=title;
-    document.getElementById("modalScore").textContent=score;
-    document.getElementById("modal").classList.remove("hidden");
-}
-
-function closeModal(){
-
-    document.getElementById("modal").classList.add("hidden");
-
-    if(currentGame==="snake"){
-        startSnake();
-    }
-
-    if(currentGame==="tetris"){
-        startTetris();
+    if (tg) {
+        tg.close();
     }
 }
 
 
-/* =====================================================
-   СВАЙПЫ
-===================================================== */
+function backToMenu() {
 
-let touchStartX=0;
-let touchStartY=0;
-let touchStartTime=0;
+    snakeRunning = false;
+    tetrisRunning = false;
 
-function setupSwipe(element,callback){
-
-    element.addEventListener("touchstart",function(e){
-
-        const t=e.changedTouches[0];
-
-        touchStartX=t.clientX;
-        touchStartY=t.clientY;
-        touchStartTime=Date.now();
-
-    },{passive:true});
+    showScreen("menu");
+}
 
 
-    element.addEventListener("touchend",function(e){
+let currentGame = "";
 
-        const t=e.changedTouches[0];
 
-        const dx=t.clientX-touchStartX;
-        const dy=t.clientY-touchStartY;
+/* ======================================================
+   ЗМЕЙКА
+====================================================== */
 
-        const distance=Math.max(
-            Math.abs(dx),
-            Math.abs(dy)
+const snakeCanvas =
+    document.getElementById("snakeCanvas");
+
+const snakeCtx =
+    snakeCanvas.getContext("2d");
+
+const SW = 16;
+const SH = 20;
+
+let snake = [];
+let food = null;
+
+let snakeDirection = {
+    x: 1,
+    y: 0
+};
+
+let snakeNextDirection = {
+    x: 1,
+    y: 0
+};
+
+let snakeScore = 0;
+let snakeRunning = false;
+let snakePaused = false;
+let snakeTimer = null;
+
+let snakeTouchStartX = 0;
+let snakeTouchStartY = 0;
+
+
+function setupSnakeCanvas() {
+
+    const size =
+        Math.min(
+            window.innerWidth - 40,
+            390
         );
 
-        const duration=Date.now()-touchStartTime;
-
-        if(distance<25){
-
-            callback("tap");
-
-            return;
-        }
-
-        if(Math.abs(dx)>Math.abs(dy)){
-
-            callback(dx>0?"right":"left");
-
-        }else{
-
-            callback(dy>0?"down":"up");
-
-        }
-
-    },{passive:true});
+    snakeCanvas.width = size;
+    snakeCanvas.height =
+        Math.floor(size * SH / SW);
 }
 
 
-/* =====================================================
-   ЗМЕЙКА
-===================================================== */
+function openSnake() {
 
-const SW=10;
-const SH=12;
+    currentGame = "snake";
 
-let snake=[];
-let food=null;
-let snakeDir={x:1,y:0};
-let snakeNext={x:1,y:0};
-let snakeScore=0;
-let snakeTimer=null;
-let snakeRunning=false;
+    showScreen("snakeScreen");
 
-function startSnake(){
+    setupSnakeCanvas();
 
-    closeGameLoops();
+    restartSnake();
+}
 
-    currentGame="snake";
 
-    hideAll();
+function restartSnake() {
 
-    document.getElementById("snakeGame").classList.remove("hidden");
+    clearTimeout(snakeTimer);
 
-    snake=[
-        {x:5,y:6},
-        {x:4,y:6},
-        {x:3,y:6}
+    snake = [
+        {
+            x: 7,
+            y: 10
+        },
+        {
+            x: 6,
+            y: 10
+        },
+        {
+            x: 5,
+            y: 10
+        }
     ];
 
-    snakeDir={x:1,y:0};
-    snakeNext={x:1,y:0};
-    snakeScore=0;
-    snakeRunning=true;
+    snakeDirection = {
+        x: 1,
+        y: 0
+    };
+
+    snakeNextDirection = {
+        x: 1,
+        y: 0
+    };
+
+    snakeScore = 0;
+
+    snakePaused = false;
+
+    snakeRunning = true;
 
     createFood();
 
-    renderSnake();
+    updateSnakeScore();
 
-    setTopScore(0);
+    drawSnake();
 
-    snakeTimer=setInterval(
-        snakeStep,
-        430
-    );
+    snakeLoop();
 }
 
 
-function createFood(){
+function createFood() {
 
-    let free=[];
+    let valid = false;
 
-    for(let y=0;y<SH;y++){
+    while (!valid) {
 
-        for(let x=0;x<SW;x++){
+        food = {
+            x: Math.floor(
+                Math.random() * SW
+            ),
+            y: Math.floor(
+                Math.random() * SH
+            )
+        };
 
-            let occupied=snake.some(
-                s=>s.x===x&&s.y===y
-            );
+        valid = !snake.some(
+            part =>
+                part.x === food.x &&
+                part.y === food.y
+        );
+    }
+}
 
-            if(!occupied){
-                free.push({x,y});
-            }
-        }
+
+function updateSnakeScore() {
+
+    document
+        .getElementById("snakeScore")
+        .textContent =
+        "🏆 " + snakeScore;
+}
+
+
+function drawSnake() {
+
+    const cellW =
+        snakeCanvas.width / SW;
+
+    const cellH =
+        snakeCanvas.height / SH;
+
+    snakeCtx.clearRect(
+        0,
+        0,
+        snakeCanvas.width,
+        snakeCanvas.height
+    );
+
+    snakeCtx.fillStyle = "#0b0f1a";
+
+    snakeCtx.fillRect(
+        0,
+        0,
+        snakeCanvas.width,
+        snakeCanvas.height
+    );
+
+
+    /* сетка */
+
+    snakeCtx.strokeStyle =
+        "rgba(255,255,255,.025)";
+
+    snakeCtx.lineWidth = 1;
+
+    for (
+        let x = 0;
+        x <= SW;
+        x++
+    ) {
+
+        snakeCtx.beginPath();
+
+        snakeCtx.moveTo(
+            x * cellW,
+            0
+        );
+
+        snakeCtx.lineTo(
+            x * cellW,
+            snakeCanvas.height
+        );
+
+        snakeCtx.stroke();
     }
 
-    food=free[
-        Math.floor(
-            Math.random()*free.length
-        )
-    ];
+
+    for (
+        let y = 0;
+        y <= SH;
+        y++
+    ) {
+
+        snakeCtx.beginPath();
+
+        snakeCtx.moveTo(
+            0,
+            y * cellH
+        );
+
+        snakeCtx.lineTo(
+            snakeCanvas.width,
+            y * cellH
+        );
+
+        snakeCtx.stroke();
+    }
+
+
+    /* яблоко */
+
+    if (food) {
+
+        snakeCtx.font =
+            `${Math.floor(cellH * .9)}px serif`;
+
+        snakeCtx.textAlign = "center";
+        snakeCtx.textBaseline = "middle";
+
+        snakeCtx.fillText(
+            "🍎",
+            food.x * cellW + cellW / 2,
+            food.y * cellH + cellH / 2
+        );
+    }
+
+
+    /* тело */
+
+    snake.forEach(
+        (part, index) => {
+
+            const padding = 2;
+
+            const x =
+                part.x * cellW + padding;
+
+            const y =
+                part.y * cellH + padding;
+
+            const w =
+                cellW - padding * 2;
+
+            const h =
+                cellH - padding * 2;
+
+            snakeCtx.fillStyle =
+                index === 0
+                    ? "#65ff7a"
+                    : "#20c957";
+
+            snakeCtx.beginPath();
+
+            snakeCtx.roundRect(
+                x,
+                y,
+                w,
+                h,
+                Math.min(6, w / 3)
+            );
+
+            snakeCtx.fill();
+
+
+            /* глаза */
+
+            if (index === 0) {
+
+                snakeCtx.fillStyle =
+                    "#07100a";
+
+                const eyeSize =
+                    Math.max(2, cellW * .11);
+
+                let ex1 =
+                    x + w * .32;
+
+                let ex2 =
+                    x + w * .68;
+
+                let ey =
+                    y + h * .32;
+
+                if (snakeDirection.x < 0) {
+                    ex1 =
+                        x + w * .32;
+                    ex2 =
+                        x + w * .32;
+                    ey =
+                        y + h * .3;
+                }
+
+                if (snakeDirection.x > 0) {
+                    ex1 =
+                        x + w * .68;
+                    ex2 =
+                        x + w * .68;
+                    ey =
+                        y + h * .3;
+                }
+
+                snakeCtx.beginPath();
+
+                snakeCtx.arc(
+                    ex1,
+                    ey,
+                    eyeSize,
+                    0,
+                    Math.PI * 2
+                );
+
+                snakeCtx.fill();
+
+                snakeCtx.beginPath();
+
+                snakeCtx.arc(
+                    ex2,
+                    y + h * .68,
+                    eyeSize,
+                    0,
+                    Math.PI * 2
+                );
+
+                snakeCtx.fill();
+            }
+
+        }
+    );
 }
 
 
-function renderSnake(){
+function snakeLoop() {
 
-    const board=document.getElementById(
-        "snakeBoard"
-    );
+    if (!snakeRunning) {
+        return;
+    }
 
-    board.innerHTML="";
+    snakeTimer =
+        setTimeout(
+            () => {
 
-    for(let y=0;y<SH;y++){
+                if (!snakePaused) {
 
-        for(let x=0;x<SW;x++){
+                    snakeDirection =
+                        snakeNextDirection;
 
-            const cell=document.createElement("div");
+                    const head =
+                        snake[0];
 
-            cell.className="cell";
+                    const newHead = {
+                        x:
+                            head.x +
+                            snakeDirection.x,
 
-            const segment=snake.findIndex(
-                s=>s.x===x&&s.y===y
-            );
+                        y:
+                            head.y +
+                            snakeDirection.y
+                    };
 
-            if(segment===0){
 
-                cell.textContent="🐲";
-                cell.classList.add("snake");
+                    /* стена */
 
-            }else if(segment>0){
+                    if (
+                        newHead.x < 0 ||
+                        newHead.x >= SW ||
+                        newHead.y < 0 ||
+                        newHead.y >= SH
+                    ) {
 
-                cell.textContent=
-                    segment%2===0?"🟢":"🟩";
+                        snakeGameOver();
 
-                cell.classList.add("snake");
+                        return;
+                    }
 
-            }else if(
-                food &&
-                food.x===x &&
-                food.y===y
-            ){
 
-                cell.textContent="🍎";
-                cell.classList.add("food");
+                    /* хвост */
 
-            }else{
+                    const eating =
+                        food &&
+                        newHead.x === food.x &&
+                        newHead.y === food.y;
 
-                const decorations=[
-                    "",
-                    "",
-                    "✨",
-                    "",
-                    "",
-                    "⭐",
-                    "",
-                    "💫"
-                ];
+                    const bodyToCheck =
+                        eating
+                            ? snake
+                            : snake.slice(
+                                0,
+                                snake.length - 1
+                            );
 
-                cell.textContent=
-                    decorations[
-                        Math.floor(
-                            Math.random()*
-                            decorations.length
+
+                    /* тело */
+
+                    if (
+                        bodyToCheck.some(
+                            part =>
+                                part.x === newHead.x &&
+                                part.y === newHead.y
                         )
-                    ];
-            }
+                    ) {
 
-            board.appendChild(cell);
-        }
-    }
+                        snakeGameOver();
 
-    document.getElementById(
-        "snakeScore"
-    ).textContent="🏆 "+snakeScore;
+                        return;
+                    }
+
+
+                    snake.unshift(
+                        newHead
+                    );
+
+
+                    if (eating) {
+
+                        snakeScore += 10;
+
+                        updateSnakeScore();
+
+                        createFood();
+
+                        if (tg) {
+
+                            try {
+                                tg.HapticFeedback.impactOccurred(
+                                    "light"
+                                );
+                            } catch(e) {}
+
+                        }
+
+                    } else {
+
+                        snake.pop();
+                    }
+
+                    drawSnake();
+                }
+
+                snakeLoop();
+
+            },
+            Math.max(
+                70,
+                135 -
+                Math.min(
+                    55,
+                    snakeScore * 0.35
+                )
+            )
+        );
 }
 
 
-function snakeStep(){
+function snakeGameOver() {
 
-    if(!snakeRunning)return;
+    snakeRunning = false;
 
-    snakeDir=snakeNext;
+    clearTimeout(snakeTimer);
 
-    const head=snake[0];
-
-    const next={
-        x:head.x+snakeDir.x,
-        y:head.y+snakeDir.y
-    };
-
-    if(
-        next.x<0 ||
-        next.x>=SW ||
-        next.y<0 ||
-        next.y>=SH
-    ){
-
-        endSnake();
-
-        return;
-    }
-
-    const hit=snake.some(
-        (s,i)=>
-            i>0 &&
-            s.x===next.x &&
-            s.y===next.y
-    );
-
-    if(hit){
-
-        endSnake();
-
-        return;
-    }
-
-    snake.unshift(next);
-
-    if(
-        food &&
-        next.x===food.x &&
-        next.y===food.y
-    ){
-
-        snakeScore+=10;
-
-        createFood();
-
-    }else{
-
-        snake.pop();
-    }
-
-    setTopScore(snakeScore);
-
-    renderSnake();
-}
-
-
-function endSnake(){
-
-    snakeRunning=false;
-
-    clearInterval(snakeTimer);
-
-    gameOver(
-        "💥 ЗМЕЙКА ОКОНЧЕНА",
+    showGameOver(
+        "🐍 ЗМЕЙКА ОКОНЧЕНА",
         snakeScore
     );
 }
 
 
-function stopSnake(){
+function pauseSnake() {
 
-    snakeRunning=false;
+    snakePaused =
+        !snakePaused;
 
-    clearInterval(snakeTimer);
+    const button =
+        document.querySelector(
+            "#snakeScreen .bottom-buttons button"
+        );
 
-    snakeTimer=null;
-}
+    if (button) {
 
-
-function snakeSwipe(direction){
-
-    if(!snakeRunning)return;
-
-    const directions={
-
-        up:{x:0,y:-1},
-        down:{x:0,y:1},
-        left:{x:-1,y:0},
-        right:{x:1,y:0}
-
-    };
-
-    const newDir=directions[direction];
-
-    if(!newDir)return;
-
-    if(
-        newDir.x===-snakeDir.x &&
-        newDir.y===-snakeDir.y
-    ){
-        return;
+        button.textContent =
+            snakePaused
+                ? "▶️ Продолжить"
+                : "⏸ Пауза";
     }
-
-    snakeNext=newDir;
 }
 
 
-setupSwipe(
-    document.getElementById("snakeGame"),
-    snakeSwipe
+/* ======================================================
+   СВАЙП ЗМЕЙКИ
+====================================================== */
+
+snakeCanvas.addEventListener(
+    "touchstart",
+    function(e) {
+
+        const touch =
+            e.changedTouches[0];
+
+        snakeTouchStartX =
+            touch.clientX;
+
+        snakeTouchStartY =
+            touch.clientY;
+
+    },
+    {
+        passive: true
+    }
 );
 
 
-/* =====================================================
+snakeCanvas.addEventListener(
+    "touchend",
+    function(e) {
+
+        const touch =
+            e.changedTouches[0];
+
+        const dx =
+            touch.clientX -
+            snakeTouchStartX;
+
+        const dy =
+            touch.clientY -
+            snakeTouchStartY;
+
+        const minSwipe = 20;
+
+        if (
+            Math.abs(dx) < minSwipe &&
+            Math.abs(dy) < minSwipe
+        ) {
+            return;
+        }
+
+        if (
+            Math.abs(dx) >
+            Math.abs(dy)
+        ) {
+
+            if (dx > 0) {
+                changeSnakeDirection(1, 0);
+            } else {
+                changeSnakeDirection(-1, 0);
+            }
+
+        } else {
+
+            if (dy > 0) {
+                changeSnakeDirection(0, 1);
+            } else {
+                changeSnakeDirection(0, -1);
+            }
+        }
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+function changeSnakeDirection(
+    x,
+    y
+) {
+
+    if (!snakeRunning) {
+        return;
+    }
+
+    if (
+        x === -snakeDirection.x &&
+        y === -snakeDirection.y
+    ) {
+        return;
+    }
+
+    snakeNextDirection = {
+        x: x,
+        y: y
+    };
+}
+
+
+/* ======================================================
    ТЕТРИС
-===================================================== */
+====================================================== */
 
-const TW=10;
-const TH=18;
+const tetrisCanvas =
+    document.getElementById("tetrisCanvas");
 
-const PIECES=[
+const tetrisCtx =
+    tetrisCanvas.getContext("2d");
+
+
+const TW = 10;
+const TH = 18;
+
+let tetrisBoard = [];
+let currentPiece = null;
+
+let tetrisScore = 0;
+let tetrisRunning = false;
+let tetrisTimer = null;
+
+let tetrisTouchStartX = 0;
+let tetrisTouchStartY = 0;
+
+const pieces = [
 
     {
-        emoji:"🟥",
-        cells:[
-            [0,0],
-            [1,0],
-            [2,0],
-            [3,0]
-        ]
+        shape: [
+            [1,1,1,1]
+        ],
+        emoji: "🟥"
     },
 
     {
-        emoji:"🟨",
-        cells:[
-            [0,0],
-            [1,0],
-            [0,1],
+        shape: [
+            [1,1],
             [1,1]
-        ]
+        ],
+        emoji: "🟨"
     },
 
     {
-        emoji:"🟪",
-        cells:[
-            [1,0],
-            [0,1],
-            [1,1],
-            [2,1]
-        ]
+        shape: [
+            [0,1,0],
+            [1,1,1]
+        ],
+        emoji: "🟪"
     },
 
     {
-        emoji:"🟩",
-        cells:[
-            [1,0],
-            [2,0],
-            [0,1],
-            [1,1]
-        ]
+        shape: [
+            [1,0,0],
+            [1,1,1]
+        ],
+        emoji: "🟦"
     },
 
     {
-        emoji:"🟦",
-        cells:[
-            [0,0],
-            [1,0],
-            [1,1],
-            [2,1]
-        ]
+        shape: [
+            [0,0,1],
+            [1,1,1]
+        ],
+        emoji: "🟧"
     },
 
     {
-        emoji:"🟧",
-        cells:[
-            [0,0],
-            [0,1],
-            [1,1],
-            [2,1]
-        ]
+        shape: [
+            [0,1,1],
+            [1,1,0]
+        ],
+        emoji: "🟩"
     },
 
     {
-        emoji:"🔵",
-        cells:[
-            [0,1],
-            [1,0],
-            [1,1],
-            [2,1]
-        ]
+        shape: [
+            [1,1,0],
+            [0,1,1]
+        ],
+        emoji: "🔵"
     }
 
 ];
 
-let tBoard=[];
-let tPiece=null;
-let tScore=0;
-let tTimer=null;
-let tRunning=false;
+
+function setupTetrisCanvas() {
+
+    const size =
+        Math.min(
+            window.innerWidth - 40,
+            390
+        );
+
+    tetrisCanvas.width =
+        size;
+
+    tetrisCanvas.height =
+        Math.floor(
+            size * TH / TW
+        );
+}
 
 
-function emptyTetrisBoard(){
+function createTetrisBoard() {
 
     return Array.from(
-        {length:TH},
-        ()=>Array(TW).fill(null)
+        {
+            length: TH
+        },
+        () =>
+            Array(TW).fill(null)
     );
 }
 
 
-function randomPiece(){
+function openTetris() {
 
-    const source=
-        PIECES[
+    currentGame = "tetris";
+
+    showScreen("tetrisScreen");
+
+    setupTetrisCanvas();
+
+    restartTetris();
+}
+
+
+function restartTetris() {
+
+    clearTimeout(tetrisTimer);
+
+    tetrisBoard =
+        createTetrisBoard();
+
+    tetrisScore = 0;
+
+    tetrisRunning = true;
+
+    updateTetrisScore();
+
+    spawnPiece();
+
+    drawTetris();
+
+    tetrisLoop();
+}
+
+
+function spawnPiece() {
+
+    const template =
+        pieces[
             Math.floor(
-                Math.random()*PIECES.length
+                Math.random() *
+                pieces.length
             )
         ];
 
-    return {
+    currentPiece = {
 
-        emoji:source.emoji,
+        shape:
+            template.shape.map(
+                row => row.slice()
+            ),
 
-        cells:source.cells.map(
-            c=>[c[0],c[1]]
-        ),
+        emoji:
+            template.emoji,
 
-        x:3,
-        y:0
+        x:
+            Math.floor(
+                (TW -
+                template.shape[0].length) / 2
+            ),
 
+        y: 0
     };
+
+
+    if (
+        !validTetrisMove(
+            0,
+            0,
+            currentPiece.shape
+        )
+    ) {
+
+        tetrisGameOver();
+    }
 }
 
 
-function startTetris(){
-
-    closeGameLoops();
-
-    currentGame="tetris";
-
-    hideAll();
-
-    document.getElementById(
-        "tetrisGame"
-    ).classList.remove("hidden");
-
-    tBoard=emptyTetrisBoard();
-
-    tScore=0;
-
-    tRunning=true;
-
-    tPiece=randomPiece();
-
-    renderTetris();
-
-    setTopScore(0);
-
-    tTimer=setInterval(
-        tetrisStep,
-        650
-    );
-}
-
-
-function rotatedCells(piece){
-
-    const cells=piece.cells;
-
-    const rotated=cells.map(
-        ([x,y])=>[-y,x]
-    );
-
-    const minX=Math.min(
-        ...rotated.map(c=>c[0])
-    );
-
-    const minY=Math.min(
-        ...rotated.map(c=>c[1])
-    );
-
-    return rotated.map(
-        ([x,y])=>[
-            x-minX,
-            y-minY
-        ]
-    );
-}
-
-
-function canMove(
+function validTetrisMove(
     dx,
     dy,
-    cells=tPiece.cells
-){
+    shape
+) {
 
-    for(const [px,py] of cells){
+    for (
+        let y = 0;
+        y < shape.length;
+        y++
+    ) {
 
-        const x=
-            tPiece.x+
-            px+
-            dx;
+        for (
+            let x = 0;
+            x < shape[y].length;
+            x++
+        ) {
 
-        const y=
-            tPiece.y+
-            py+
-            dy;
+            if (!shape[y][x]) {
+                continue;
+            }
 
-        if(
-            x<0 ||
-            x>=TW ||
-            y>=TH
-        ){
-            return false;
-        }
+            const nx =
+                currentPiece.x +
+                x +
+                dx;
 
-        if(
-            y>=0 &&
-            tBoard[y][x]
-        ){
-            return false;
+            const ny =
+                currentPiece.y +
+                y +
+                dy;
+
+
+            if (
+                nx < 0 ||
+                nx >= TW ||
+                ny >= TH
+            ) {
+
+                return false;
+            }
+
+
+            if (
+                ny >= 0 &&
+                tetrisBoard[ny][nx]
+            ) {
+
+                return false;
+            }
         }
     }
 
@@ -961,359 +1344,729 @@ function canMove(
 }
 
 
-function moveTetris(dx,dy){
+function rotateShape(shape) {
 
-    if(!tRunning)return;
+    const rows =
+        shape.length;
 
-    if(canMove(dx,dy)){
+    const cols =
+        shape[0].length;
 
-        tPiece.x+=dx;
-        tPiece.y+=dy;
+    const result =
+        Array.from(
+            {
+                length: cols
+            },
+            () =>
+                Array(rows).fill(0)
+        );
 
-        renderTetris();
+    for (
+        let y = 0;
+        y < rows;
+        y++
+    ) {
 
-        return true;
-    }
+        for (
+            let x = 0;
+            x < cols;
+            x++
+        ) {
 
-    return false;
-}
-
-
-function rotateTetris(){
-
-    if(!tRunning)return;
-
-    const rotated=
-        rotatedCells(tPiece);
-
-    if(canMove(0,0,rotated)){
-
-        tPiece.cells=rotated;
-
-    }else if(
-        canMove(-1,0,rotated)
-    ){
-
-        tPiece.x--;
-        tPiece.cells=rotated;
-
-    }else if(
-        canMove(1,0,rotated)
-    ){
-
-        tPiece.x++;
-        tPiece.cells=rotated;
-    }
-
-    renderTetris();
-}
-
-
-function hardDrop(){
-
-    if(!tRunning)return;
-
-    let distance=0;
-
-    while(canMove(0,1)){
-
-        tPiece.y++;
-
-        distance++;
-    }
-
-    tScore+=distance*2;
-
-    lockPiece();
-}
-
-
-function lockPiece(){
-
-    for(const [px,py] of tPiece.cells){
-
-        const x=tPiece.x+px;
-        const y=tPiece.y+py;
-
-        if(
-            y>=0 &&
-            y<TH &&
-            x>=0 &&
-            x<TW
-        ){
-
-            tBoard[y][x]=tPiece.emoji;
+            result[x][
+                rows - 1 - y
+            ] =
+                shape[y][x];
         }
     }
 
-    clearLines();
+    return result;
+}
 
-    tPiece=randomPiece();
 
-    if(!canMove(0,0)){
+function rotateTetris() {
 
-        endTetris();
-
+    if (!tetrisRunning) {
         return;
     }
 
-    renderTetris();
-}
-
-
-function clearLines(){
-
-    const remaining=
-        tBoard.filter(
-            row=>row.some(
-                cell=>!cell
-            )
+    const rotated =
+        rotateShape(
+            currentPiece.shape
         );
 
-    const cleared=
-        TH-remaining.length;
-
-    if(cleared>0){
-
-        for(
-            let i=0;
-            i<cleared;
-            i++
-        ){
-
-            remaining.unshift(
-                Array(TW).fill(null)
-            );
-        }
-
-        tBoard=remaining;
-
-        const points=[
+    if (
+        validTetrisMove(
             0,
-            100,
-            300,
-            600,
-            1000
-        ];
+            0,
+            rotated
+        )
+    ) {
 
-        tScore+=
-            points[
-                Math.min(cleared,4)
-            ];
+        currentPiece.shape =
+            rotated;
+
+        drawTetris();
+
+        haptic();
     }
-
-    setTopScore(tScore);
 }
 
 
-function renderTetris(){
+function moveTetris(dx) {
 
-    const board=
-        document.getElementById(
-            "tetrisBoard"
-        );
-
-    board.innerHTML="";
-
-    for(let y=0;y<TH;y++){
-
-        for(let x=0;x<TW;x++){
-
-            const cell=
-                document.createElement("div");
-
-            cell.className="tcell";
-
-            if(tBoard[y][x]){
-
-                cell.textContent=
-                    tBoard[y][x];
-
-            }else{
-
-                const stars=[
-                    "",
-                    "",
-                    "",
-                    "✨",
-                    "",
-                    "",
-                    "·"
-                ];
-
-                cell.textContent=
-                    stars[
-                        Math.floor(
-                            Math.random()*
-                            stars.length
-                        )
-                    ];
-            }
-
-            board.appendChild(cell);
-        }
+    if (!tetrisRunning) {
+        return;
     }
 
+    if (
+        validTetrisMove(
+            dx,
+            0,
+            currentPiece.shape
+        )
+    ) {
 
-    if(tPiece){
+        currentPiece.x += dx;
 
-        for(
-            const [px,py]
-            of tPiece.cells
-        ){
-
-            const x=
-                tPiece.x+px;
-
-            const y=
-                tPiece.y+py;
-
-            if(
-                x>=0 &&
-                x<TW &&
-                y>=0 &&
-                y<TH
-            ){
-
-                const index=
-                    y*TW+x;
-
-                const cell=
-                    board.children[index];
-
-                cell.textContent=
-                    tPiece.emoji;
-
-                cell.style.transform=
-                    "scale(1.05)";
-            }
-        }
+        drawTetris();
     }
-
-    document.getElementById(
-        "tetrisScore"
-    ).textContent="🏆 "+tScore;
 }
 
 
-function tetrisStep(){
+function softDrop() {
 
-    if(!tRunning)return;
+    if (!tetrisRunning) {
+        return;
+    }
 
-    if(!moveTetris(0,1)){
+    if (
+        validTetrisMove(
+            0,
+            1,
+            currentPiece.shape
+        )
+    ) {
+
+        currentPiece.y++;
+
+        tetrisScore++;
+
+        updateTetrisScore();
+
+        drawTetris();
+
+    } else {
 
         lockPiece();
     }
 }
 
 
-function endTetris(){
+function hardDrop() {
 
-    tRunning=false;
+    if (!tetrisRunning) {
+        return;
+    }
 
-    clearInterval(tTimer);
+    let distance = 0;
 
-    gameOver(
-        "💥 ТЕТРИС ОКОНЧЕН",
-        tScore
-    );
+    while (
+        validTetrisMove(
+            0,
+            1,
+            currentPiece.shape
+        )
+    ) {
+
+        currentPiece.y++;
+
+        distance++;
+    }
+
+    tetrisScore +=
+        distance * 2;
+
+    updateTetrisScore();
+
+    lockPiece();
+
+    haptic();
 }
 
 
-function stopTetris(){
+function lockPiece() {
 
-    tRunning=false;
+    const shape =
+        currentPiece.shape;
 
-    clearInterval(tTimer);
+    for (
+        let y = 0;
+        y < shape.length;
+        y++
+    ) {
 
-    tTimer=null;
+        for (
+            let x = 0;
+            x < shape[y].length;
+            x++
+        ) {
+
+            if (!shape[y][x]) {
+                continue;
+            }
+
+            const bx =
+                currentPiece.x + x;
+
+            const by =
+                currentPiece.y + y;
+
+            if (
+                by >= 0 &&
+                by < TH &&
+                bx >= 0 &&
+                bx < TW
+            ) {
+
+                tetrisBoard[by][bx] =
+                    currentPiece.emoji;
+            }
+        }
+    }
+
+    clearLines();
+
+    spawnPiece();
+
+    drawTetris();
 }
 
 
-function tetrisSwipe(direction){
+function clearLines() {
 
-    if(!tRunning)return;
+    let lines = 0;
 
-    if(direction==="left"){
+    tetrisBoard =
+        tetrisBoard.filter(
+            row => {
 
-        moveTetris(-1,0);
+                if (
+                    row.every(
+                        cell => cell !== null
+                    )
+                ) {
 
-    }else if(direction==="right"){
+                    lines++;
 
-        moveTetris(1,0);
+                    return false;
+                }
 
-    }else if(direction==="down"){
+                return true;
+            }
+        );
 
-        moveTetris(0,1);
 
-    }else if(direction==="up"){
+    while (
+        tetrisBoard.length < TH
+    ) {
 
-        hardDrop();
+        tetrisBoard.unshift(
+            Array(TW).fill(null)
+        );
+    }
 
-    }else if(direction==="tap"){
 
-        rotateTetris();
+    if (lines === 1) {
+        tetrisScore += 100;
+    }
+
+    if (lines === 2) {
+        tetrisScore += 300;
+    }
+
+    if (lines === 3) {
+        tetrisScore += 600;
+    }
+
+    if (lines >= 4) {
+        tetrisScore += 1000;
+    }
+
+    if (lines > 0) {
+
+        updateTetrisScore();
+
+        haptic();
     }
 }
 
 
-setupSwipe(
-    document.getElementById("tetrisGame"),
-    tetrisSwipe
-);
+function updateTetrisScore() {
 
-
-/* =====================================================
-   ОСТАНОВКА
-===================================================== */
-
-function closeGameLoops(){
-
-    stopSnake();
-    stopTetris();
+    document
+        .getElementById("tetrisScore")
+        .textContent =
+        "🏆 " + tetrisScore;
 }
 
 
-/* =====================================================
-   КЛАВИАТУРА ПК
-===================================================== */
+function drawTetris() {
 
-document.addEventListener(
-    "keydown",
-    function(e){
+    const cellW =
+        tetrisCanvas.width / TW;
 
-        if(currentGame==="snake"){
+    const cellH =
+        tetrisCanvas.height / TH;
 
-            if(e.key==="ArrowUp")
-                snakeSwipe("up");
+    tetrisCtx.clearRect(
+        0,
+        0,
+        tetrisCanvas.width,
+        tetrisCanvas.height
+    );
 
-            if(e.key==="ArrowDown")
-                snakeSwipe("down");
+    tetrisCtx.fillStyle =
+        "#0b0f1a";
 
-            if(e.key==="ArrowLeft")
-                snakeSwipe("left");
+    tetrisCtx.fillRect(
+        0,
+        0,
+        tetrisCanvas.width,
+        tetrisCanvas.height
+    );
 
-            if(e.key==="ArrowRight")
-                snakeSwipe("right");
+
+    /* сетка */
+
+    tetrisCtx.strokeStyle =
+        "rgba(255,255,255,.025)";
+
+    for (
+        let x = 0;
+        x <= TW;
+        x++
+    ) {
+
+        tetrisCtx.beginPath();
+
+        tetrisCtx.moveTo(
+            x * cellW,
+            0
+        );
+
+        tetrisCtx.lineTo(
+            x * cellW,
+            tetrisCanvas.height
+        );
+
+        tetrisCtx.stroke();
+    }
+
+
+    for (
+        let y = 0;
+        y <= TH;
+        y++
+    ) {
+
+        tetrisCtx.beginPath();
+
+        tetrisCtx.moveTo(
+            0,
+            y * cellH
+        );
+
+        tetrisCtx.lineTo(
+            tetrisCanvas.width,
+            y * cellH
+        );
+
+        tetrisCtx.stroke();
+    }
+
+
+    /* сохранённые блоки */
+
+    for (
+        let y = 0;
+        y < TH;
+        y++
+    ) {
+
+        for (
+            let x = 0;
+            x < TW;
+            x++
+        ) {
+
+            if (
+                tetrisBoard[y][x]
+            ) {
+
+                drawBlock(
+                    x,
+                    y,
+                    tetrisBoard[y][x]
+                );
+            }
+        }
+    }
+
+
+    /* текущая фигура */
+
+    if (currentPiece) {
+
+        const shape =
+            currentPiece.shape;
+
+        for (
+            let y = 0;
+            y < shape.length;
+            y++
+        ) {
+
+            for (
+                let x = 0;
+                x < shape[y].length;
+                x++
+            ) {
+
+                if (!shape[y][x]) {
+                    continue;
+                }
+
+                drawBlock(
+                    currentPiece.x + x,
+                    currentPiece.y + y,
+                    currentPiece.emoji
+                );
+            }
+        }
+    }
+}
+
+
+function drawBlock(
+    x,
+    y,
+    emoji
+) {
+
+    if (
+        x < 0 ||
+        x >= TW ||
+        y < 0 ||
+        y >= TH
+    ) {
+        return;
+    }
+
+    const cellW =
+        tetrisCanvas.width / TW;
+
+    const cellH =
+        tetrisCanvas.height / TH;
+
+    tetrisCtx.font =
+        `${Math.floor(
+            Math.min(cellW, cellH) * .88
+        )}px serif`;
+
+    tetrisCtx.textAlign =
+        "center";
+
+    tetrisCtx.textBaseline =
+        "middle";
+
+    tetrisCtx.fillText(
+        emoji,
+        x * cellW + cellW / 2,
+        y * cellH + cellH / 2
+    );
+}
+
+
+function tetrisLoop() {
+
+    if (!tetrisRunning) {
+        return;
+    }
+
+    const level =
+        Math.floor(
+            tetrisScore / 500
+        );
+
+    const speed =
+        Math.max(
+            100,
+            650 -
+            level * 45
+        );
+
+    tetrisTimer =
+        setTimeout(
+            () => {
+
+                if (
+                    validTetrisMove(
+                        0,
+                        1,
+                        currentPiece.shape
+                    )
+                ) {
+
+                    currentPiece.y++;
+
+                } else {
+
+                    lockPiece();
+                }
+
+                drawTetris();
+
+                tetrisLoop();
+
+            },
+            speed
+        );
+}
+
+
+function tetrisGameOver() {
+
+    tetrisRunning = false;
+
+    clearTimeout(
+        tetrisTimer
+    );
+
+    showGameOver(
+        "🧱 ТЕТРИС ОКОНЧЕН",
+        tetrisScore
+    );
+}
+
+
+/* ======================================================
+   СВАЙПЫ ТЕТРИСА
+====================================================== */
+
+tetrisCanvas.addEventListener(
+    "touchstart",
+    function(e) {
+
+        const touch =
+            e.changedTouches[0];
+
+        tetrisTouchStartX =
+            touch.clientX;
+
+        tetrisTouchStartY =
+            touch.clientY;
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+tetrisCanvas.addEventListener(
+    "touchend",
+    function(e) {
+
+        const touch =
+            e.changedTouches[0];
+
+        const dx =
+            touch.clientX -
+            tetrisTouchStartX;
+
+        const dy =
+            touch.clientY -
+            tetrisTouchStartY;
+
+
+        const minSwipe = 20;
+
+
+        /* простой тап */
+
+        if (
+            Math.abs(dx) < minSwipe &&
+            Math.abs(dy) < minSwipe
+        ) {
+
+            rotateTetris();
+
+            return;
         }
 
 
-        if(currentGame==="tetris"){
+        /* горизонтальный свайп */
 
-            if(e.key==="ArrowLeft")
-                moveTetris(-1,0);
+        if (
+            Math.abs(dx) >
+            Math.abs(dy)
+        ) {
 
-            if(e.key==="ArrowRight")
-                moveTetris(1,0);
+            if (dx > 0) {
+                moveTetris(1);
+            } else {
+                moveTetris(-1);
+            }
 
-            if(e.key==="ArrowDown")
-                moveTetris(0,1);
+            return;
+        }
 
-            if(e.key==="ArrowUp")
-                rotateTetris();
 
-            if(e.key===" ")
-                hardDrop();
+        /* свайп вниз */
+
+        if (dy > 0) {
+
+            hardDrop();
+
+            return;
+        }
+
+
+        /* свайп вверх */
+
+        if (dy < 0) {
+
+            rotateTetris();
+        }
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+/* ======================================================
+   GAME OVER
+====================================================== */
+
+function showGameOver(
+    title,
+    score
+) {
+
+    document
+        .getElementById(
+            "gameOverTitle"
+        )
+        .textContent = title;
+
+    document
+        .getElementById(
+            "gameOverScore"
+        )
+        .textContent =
+        "🏆 Очки: " + score;
+
+    document
+        .getElementById(
+            "gameOver"
+        )
+        .classList.add("active");
+}
+
+
+function closeGameOver() {
+
+    document
+        .getElementById(
+            "gameOver"
+        )
+        .classList.remove("active");
+
+    showScreen("menu");
+}
+
+
+function restartCurrentGame() {
+
+    document
+        .getElementById(
+            "gameOver"
+        )
+        .classList.remove("active");
+
+    if (
+        currentGame === "snake"
+    ) {
+
+        showScreen(
+            "snakeScreen"
+        );
+
+        restartSnake();
+
+    } else {
+
+        showScreen(
+            "tetrisScreen"
+        );
+
+        restartTetris();
+    }
+}
+
+
+function haptic() {
+
+    if (tg) {
+
+        try {
+
+            tg.HapticFeedback
+                .impactOccurred(
+                    "light"
+                );
+
+        } catch(e) {}
+    }
+}
+
+
+/* ======================================================
+   RESIZE
+====================================================== */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        const active =
+            document.querySelector(
+                ".screen.active"
+            );
+
+        if (
+            active &&
+            active.id ===
+            "snakeScreen"
+        ) {
+
+            setupSnakeCanvas();
+
+            drawSnake();
+        }
+
+        if (
+            active &&
+            active.id ===
+            "tetrisScreen"
+        ) {
+
+            setupTetrisCanvas();
+
+            drawTetris();
         }
 
     }
