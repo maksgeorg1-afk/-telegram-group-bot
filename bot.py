@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import asyncio
+import random
 from datetime import datetime, timedelta, timezone
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -92,10 +93,7 @@ CREATE TABLE IF NOT EXISTS ads (
 """)
 
 
-# Если база была создана старой версией
-cursor.execute(
-    "PRAGMA table_info(ads)"
-)
+cursor.execute("PRAGMA table_info(ads)")
 
 columns = [
     row[1]
@@ -103,7 +101,6 @@ columns = [
 ]
 
 if "thread_id" not in columns:
-
     cursor.execute(
         "ALTER TABLE ads ADD COLUMN thread_id INTEGER"
     )
@@ -127,6 +124,14 @@ class AdForm(StatesGroup):
 
 class SearchForm(StatesGroup):
     query = State()
+
+
+# =========================================================
+# ИГРОВЫЕ СОСТОЯНИЯ
+# =========================================================
+
+snake_games = {}
+tetris_games = {}
 
 
 # =========================================================
@@ -181,6 +186,12 @@ def main_keyboard():
             ],
             [
                 InlineKeyboardButton(
+                    text="🎮 ИГРЫ",
+                    callback_data="games"
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="🔎 Найти объявление",
                     callback_data="search"
                 )
@@ -196,7 +207,37 @@ def main_keyboard():
 
 
 # =========================================================
-# РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ
+# МЕНЮ ИГР
+# =========================================================
+
+def games_keyboard():
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🧱 ТЕТРИС",
+                    callback_data="game_tetris"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🐍 ЗМЕЙКА",
+                    callback_data="game_snake"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🏠 Главное меню",
+                    callback_data="back_main"
+                )
+            ]
+        ]
+    )
+
+
+# =========================================================
+# РЕГИСТРАЦИЯ
 # =========================================================
 
 def register_user(user_id):
@@ -248,7 +289,7 @@ def ads_today(user_id):
 
 
 # =========================================================
-# /START
+# START
 # =========================================================
 
 @dp.message(CommandStart())
@@ -267,6 +308,7 @@ async def start(
         "🇺🇦 <b>UA Объявления</b>\n\n"
         "Здесь можно купить, продать, найти работу, "
         "жильё, авто или услуги.\n\n"
+        "🎮 А ещё у нас появились игры!\n\n"
         "Что тебя интересует?",
         reply_markup=main_keyboard(),
         parse_mode="HTML"
@@ -300,8 +342,969 @@ async def show_topic_id(
 
 
 # =========================================================
-# СОЗДАНИЕ ОБЪЯВЛЕНИЯ
+# ИГРЫ
 # =========================================================
+
+@dp.callback_query(F.data == "games")
+async def games_menu(
+    callback: CallbackQuery
+):
+
+    await callback.answer()
+
+    await callback.message.answer(
+        "🎮 <b>ИГРОВОЙ ЦЕНТР</b>\n\n"
+        "Выбирай игру и попробуй побить свой рекорд! 🏆\n\n"
+        "🧱 <b>Тетрис</b> — собирай линии\n"
+        "🐍 <b>Змейка</b> — собирай яблоки\n\n"
+        "🔥 Чем больше очков — тем лучше!",
+        reply_markup=games_keyboard(),
+        parse_mode="HTML"
+    )
+
+
+# =========================================================
+# НАЗАД
+# =========================================================
+
+@dp.callback_query(F.data == "back_main")
+async def back_main(
+    callback: CallbackQuery
+):
+
+    await callback.answer()
+
+    await callback.message.answer(
+        "🏠 <b>Главное меню</b>",
+        reply_markup=main_keyboard(),
+        parse_mode="HTML"
+    )
+
+
+# =========================================================
+# =========================================================
+# ЗМЕЙКА
+# =========================================================
+# =========================================================
+
+SNAKE_WIDTH = 10
+SNAKE_HEIGHT = 12
+
+
+def snake_keyboard():
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="⬆️",
+                    callback_data="snake_up"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data="snake_left"
+                ),
+                InlineKeyboardButton(
+                    text="⏹️",
+                    callback_data="snake_stop"
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data="snake_right"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬇️",
+                    callback_data="snake_down"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🔄 Новая игра",
+                    callback_data="game_snake"
+                ),
+                InlineKeyboardButton(
+                    text="🎮 Игры",
+                    callback_data="games"
+                )
+            ]
+        ]
+    )
+
+
+def create_snake(user_id):
+
+    snake = [
+        (5, 6),
+        (4, 6),
+        (3, 6)
+    ]
+
+    food = create_snake_food(snake)
+
+    snake_games[user_id] = {
+        "snake": snake,
+        "food": food,
+        "direction": (1, 0),
+        "next_direction": (1, 0),
+        "score": 0,
+        "running": True,
+        "game_over": False
+    }
+
+
+def create_snake_food(snake):
+
+    empty = []
+
+    for y in range(SNAKE_HEIGHT):
+        for x in range(SNAKE_WIDTH):
+
+            if (x, y) not in snake:
+                empty.append((x, y))
+
+    if not empty:
+        return None
+
+    return random.choice(empty)
+
+
+def render_snake(game):
+
+    snake = game["snake"]
+    food = game["food"]
+
+    result = []
+
+    result.append(
+        "🐍 <b>ЗМЕЙКА</b>\n"
+        "━━━━━━━━━━━━\n"
+        f"🏆 Очки: <b>{game['score']}</b>\n\n"
+    )
+
+    for y in range(SNAKE_HEIGHT):
+
+        line = ""
+
+        for x in range(SNAKE_WIDTH):
+
+            pos = (x, y)
+
+            if pos == snake[0]:
+                line += "🐲"
+
+            elif pos in snake:
+                line += "🟢"
+
+            elif pos == food:
+                line += "🍎"
+
+            else:
+                line += "⬛"
+
+        result.append(line + "\n")
+
+    result.append(
+        "\n🎯 Собирай 🍎 и не врезайся!"
+    )
+
+    return "".join(result)
+
+
+async def snake_loop(
+    bot,
+    chat_id,
+    user_id,
+    message_id
+):
+
+    while user_id in snake_games:
+
+        game = snake_games[user_id]
+
+        if not game["running"]:
+            break
+
+        await asyncio.sleep(0.65)
+
+        if user_id not in snake_games:
+            break
+
+        game = snake_games[user_id]
+
+        if not game["running"]:
+            break
+
+        game["direction"] = game["next_direction"]
+
+        head = game["snake"][0]
+
+        dx, dy = game["direction"]
+
+        new_head = (
+            head[0] + dx,
+            head[1] + dy
+        )
+
+        hit_wall = (
+            new_head[0] < 0
+            or new_head[0] >= SNAKE_WIDTH
+            or new_head[1] < 0
+            or new_head[1] >= SNAKE_HEIGHT
+        )
+
+        hit_self = new_head in game["snake"]
+
+        if hit_wall or hit_self:
+
+            game["running"] = False
+            game["game_over"] = True
+
+            try:
+
+                await bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    text=(
+                        "💥 <b>ИГРА ОКОНЧЕНА!</b>\n\n"
+                        "🐍 Змейка врезалась!\n\n"
+                        f"🏆 Твой результат: "
+                        f"<b>{game['score']}</b>\n\n"
+                        "🔥 Попробуешь ещё раз?"
+                    ),
+                    reply_markup=snake_keyboard(),
+                    parse_mode="HTML"
+                )
+
+            except Exception as error:
+
+                print(
+                    "SNAKE GAME OVER:",
+                    repr(error)
+                )
+
+            break
+
+        game["snake"].insert(
+            0,
+            new_head
+        )
+
+        if new_head == game["food"]:
+
+            game["score"] += 10
+
+            game["food"] = create_snake_food(
+                game["snake"]
+            )
+
+        else:
+
+            game["snake"].pop()
+
+        try:
+
+            await bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=render_snake(game),
+                reply_markup=snake_keyboard(),
+                parse_mode="HTML"
+            )
+
+        except Exception as error:
+
+            print(
+                "SNAKE UPDATE:",
+                repr(error)
+            )
+
+            break
+
+
+@dp.callback_query(F.data == "game_snake")
+async def start_snake(
+    callback: CallbackQuery
+):
+
+    await callback.answer()
+
+    user_id = callback.from_user.id
+
+    create_snake(user_id)
+
+    game = snake_games[user_id]
+
+    sent = await callback.message.answer(
+        render_snake(game),
+        reply_markup=snake_keyboard(),
+        parse_mode="HTML"
+    )
+
+    asyncio.create_task(
+        snake_loop(
+            callback.bot,
+            sent.chat.id,
+            user_id,
+            sent.message_id
+        )
+    )
+
+
+# =========================================================
+# УПРАВЛЕНИЕ ЗМЕЙКОЙ
+# =========================================================
+
+@dp.callback_query(F.data.startswith("snake_"))
+async def snake_controls(
+    callback: CallbackQuery
+):
+
+    user_id = callback.from_user.id
+
+    if user_id not in snake_games:
+
+        await callback.answer(
+            "Сначала запусти игру!",
+            show_alert=True
+        )
+
+        return
+
+    game = snake_games[user_id]
+
+    if game["game_over"]:
+
+        await callback.answer(
+            "Игра окончена! Нажми 🔄 Новая игра.",
+            show_alert=True
+        )
+
+        return
+
+    directions = {
+
+        "snake_up": (0, -1),
+
+        "snake_down": (0, 1),
+
+        "snake_left": (-1, 0),
+
+        "snake_right": (1, 0)
+    }
+
+    if callback.data == "snake_stop":
+
+        game["running"] = not game["running"]
+
+        if game["running"]:
+
+            await callback.answer(
+                "▶️ Игра продолжена!"
+            )
+
+        else:
+
+            await callback.answer(
+                "⏸ Игра поставлена на паузу."
+            )
+
+        return
+
+    new_direction = directions.get(
+        callback.data
+    )
+
+    if new_direction:
+
+        current = game["direction"]
+
+        # Запрещаем разворот на 180 градусов
+        if (
+            new_direction[0] != -current[0]
+            or new_direction[1] != -current[1]
+        ):
+
+            game["next_direction"] = new_direction
+
+        await callback.answer()
+
+
+# =========================================================
+# =========================================================
+# ТЕТРИС
+# =========================================================
+# =========================================================
+
+TETRIS_WIDTH = 10
+TETRIS_HEIGHT = 16
+
+EMPTY = "⬛"
+
+TETRIS_BLOCKS = [
+    "🟥",
+    "🟦",
+    "🟩",
+    "🟨",
+    "🟪",
+    "🟧",
+    "🔵"
+]
+
+
+TETROMINOES = [
+
+    [
+        [(0, 1), (1, 1), (2, 1), (3, 1)],
+        [(2, 0), (2, 1), (2, 2), (2, 3)]
+    ],
+
+    [
+        [(0, 0), (1, 0), (0, 1), (1, 1)]
+    ],
+
+    [
+        [(1, 0), (0, 1), (1, 1), (2, 1)],
+        [(1, 0), (1, 1), (2, 1), (1, 2)],
+        [(0, 1), (1, 1), (2, 1), (1, 2)],
+        [(1, 0), (0, 1), (1, 1), (1, 2)]
+    ],
+
+    [
+        [(1, 0), (2, 0), (0, 1), (1, 1)],
+        [(1, 0), (1, 1), (2, 1), (2, 2)]
+    ],
+
+    [
+        [(0, 0), (1, 0), (1, 1), (2, 1)],
+        [(2, 0), (1, 1), (2, 1), (1, 2)]
+    ],
+
+    [
+        [(0, 0), (0, 1), (1, 1), (2, 1)],
+        [(1, 0), (2, 0), (1, 1), (1, 2)],
+        [(0, 1), (1, 1), (2, 1), (2, 2)],
+        [(1, 0), (1, 1), (0, 2), (1, 2)]
+    ],
+
+    [
+        [(0, 0), (1, 0), (1, 1), (2, 1)],
+        [(1, 0), (0, 1), (1, 1), (0, 2)]
+    ]
+]
+
+
+def create_tetris_board():
+
+    return [
+        [EMPTY for _ in range(TETRIS_WIDTH)]
+        for _ in range(TETRIS_HEIGHT)
+    ]
+
+
+def create_tetris_piece():
+
+    piece_id = random.randrange(
+        len(TETROMINOES)
+    )
+
+    return {
+        "type": piece_id,
+        "rotation": 0,
+        "x": 3,
+        "y": 0,
+        "emoji": TETRIS_BLOCKS[
+            piece_id
+        ]
+    }
+
+
+def piece_cells(piece):
+
+    rotations = TETROMINOES[
+        piece["type"]
+    ]
+
+    rotation = (
+        piece["rotation"]
+        % len(rotations)
+    )
+
+    return rotations[rotation]
+
+
+def valid_tetris_position(
+    game,
+    piece,
+    dx=0,
+    dy=0,
+    rotation=None
+):
+
+    board = game["board"]
+
+    if rotation is None:
+
+        rotation = piece["rotation"]
+
+    rotations = TETROMINOES[
+        piece["type"]
+    ]
+
+    cells = rotations[
+        rotation % len(rotations)
+    ]
+
+    for px, py in cells:
+
+        x = piece["x"] + px + dx
+        y = piece["y"] + py + dy
+
+        if x < 0 or x >= TETRIS_WIDTH:
+            return False
+
+        if y >= TETRIS_HEIGHT:
+            return False
+
+        if y >= 0:
+
+            if board[y][x] != EMPTY:
+                return False
+
+    return True
+
+
+def place_tetris_piece(game):
+
+    piece = game["piece"]
+
+    for px, py in piece_cells(piece):
+
+        x = piece["x"] + px
+        y = piece["y"] + py
+
+        if (
+            0 <= y < TETRIS_HEIGHT
+            and 0 <= x < TETRIS_WIDTH
+        ):
+
+            game["board"][y][x] = piece["emoji"]
+
+
+def clear_tetris_lines(game):
+
+    board = game["board"]
+
+    new_board = []
+
+    cleared = 0
+
+    for row in board:
+
+        if all(
+            cell != EMPTY
+            for cell in row
+        ):
+
+            cleared += 1
+
+        else:
+
+            new_board.append(row)
+
+    while len(new_board) < TETRIS_HEIGHT:
+
+        new_board.insert(
+            0,
+            [EMPTY] * TETRIS_WIDTH
+        )
+
+    game["board"] = new_board
+
+    if cleared == 1:
+        game["score"] += 100
+
+    elif cleared == 2:
+        game["score"] += 300
+
+    elif cleared == 3:
+        game["score"] += 600
+
+    elif cleared >= 4:
+        game["score"] += 1000
+
+
+def tetris_display_board(game):
+
+    board = [
+        row.copy()
+        for row in game["board"]
+    ]
+
+    piece = game["piece"]
+
+    for px, py in piece_cells(piece):
+
+        x = piece["x"] + px
+        y = piece["y"] + py
+
+        if (
+            0 <= x < TETRIS_WIDTH
+            and 0 <= y < TETRIS_HEIGHT
+        ):
+
+            board[y][x] = piece["emoji"]
+
+    lines = []
+
+    for row in board:
+
+        lines.append(
+            "".join(row)
+        )
+
+    return "\n".join(lines)
+
+
+def render_tetris(game):
+
+    level = (
+        game["score"] // 500
+    ) + 1
+
+    return (
+        "🧱 <b>Т Е Т Р И С</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"🏆 Очки: <b>{game['score']}</b>   "
+        f"⚡ Уровень: <b>{level}</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"{tetris_display_board(game)}\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "⬅️ ➡️ движение\n"
+        "🔄 поворот\n"
+        "⬇️ ускорить падение\n"
+        "⏬ бросить вниз"
+    )
+
+
+def tetris_keyboard():
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data="tetris_left"
+                ),
+                InlineKeyboardButton(
+                    text="🔄",
+                    callback_data="tetris_rotate"
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data="tetris_right"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬇️ ПАДЕНИЕ",
+                    callback_data="tetris_down"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⏬ СБРОС",
+                    callback_data="tetris_drop"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🔄 Новая игра",
+                    callback_data="game_tetris"
+                ),
+                InlineKeyboardButton(
+                    text="🎮 Игры",
+                    callback_data="games"
+                )
+            ]
+        ]
+    )
+
+
+def create_tetris(user_id):
+
+    tetris_games[user_id] = {
+        "board": create_tetris_board(),
+        "piece": create_tetris_piece(),
+        "score": 0,
+        "running": True,
+        "game_over": False
+    }
+
+
+async def tetris_loop(
+    bot,
+    chat_id,
+    user_id,
+    message_id
+):
+
+    while user_id in tetris_games:
+
+        game = tetris_games[user_id]
+
+        if not game["running"]:
+            break
+
+        score = game["score"]
+
+        # Чем выше уровень, тем быстрее
+        delay = max(
+            0.18,
+            0.75 - (score // 500) * 0.06
+        )
+
+        await asyncio.sleep(delay)
+
+        if user_id not in tetris_games:
+            break
+
+        game = tetris_games[user_id]
+
+        if not game["running"]:
+            break
+
+        piece = game["piece"]
+
+        if valid_tetris_position(
+            game,
+            piece,
+            dy=1
+        ):
+
+            piece["y"] += 1
+
+        else:
+
+            place_tetris_piece(game)
+
+            clear_tetris_lines(game)
+
+            game["piece"] = create_tetris_piece()
+
+            if not valid_tetris_position(
+                game,
+                game["piece"]
+            ):
+
+                game["running"] = False
+                game["game_over"] = True
+
+                try:
+
+                    await bot.edit_message_text(
+                        chat_id=chat_id,
+                        message_id=message_id,
+                        text=(
+                            "💥 <b>ТЕТРИС ОКОНЧЕН!</b>\n\n"
+                            f"🏆 Твой результат: "
+                            f"<b>{game['score']}</b>\n\n"
+                            "🔥 Сможешь набрать больше?"
+                        ),
+                        reply_markup=tetris_keyboard(),
+                        parse_mode="HTML"
+                    )
+
+                except Exception as error:
+
+                    print(
+                        "TETRIS GAME OVER:",
+                        repr(error)
+                    )
+
+                break
+
+        try:
+
+            await bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=render_tetris(game),
+                reply_markup=tetris_keyboard(),
+                parse_mode="HTML"
+            )
+
+        except Exception as error:
+
+            print(
+                "TETRIS UPDATE:",
+                repr(error)
+            )
+
+            break
+
+
+@dp.callback_query(F.data == "game_tetris")
+async def start_tetris(
+    callback: CallbackQuery
+):
+
+    await callback.answer()
+
+    user_id = callback.from_user.id
+
+    create_tetris(user_id)
+
+    game = tetris_games[user_id]
+
+    sent = await callback.message.answer(
+        render_tetris(game),
+        reply_markup=tetris_keyboard(),
+        parse_mode="HTML"
+    )
+
+    asyncio.create_task(
+        tetris_loop(
+            callback.bot,
+            sent.chat.id,
+            user_id,
+            sent.message_id
+        )
+    )
+
+
+# =========================================================
+# УПРАВЛЕНИЕ ТЕТРИСОМ
+# =========================================================
+
+@dp.callback_query(F.data.startswith("tetris_"))
+async def tetris_controls(
+    callback: CallbackQuery
+):
+
+    user_id = callback.from_user.id
+
+    if user_id not in tetris_games:
+
+        await callback.answer(
+            "Сначала запусти Тетрис!",
+            show_alert=True
+        )
+
+        return
+
+    game = tetris_games[user_id]
+
+    if game["game_over"]:
+
+        await callback.answer(
+            "Игра окончена! Нажми 🔄 Новая игра.",
+            show_alert=True
+        )
+
+        return
+
+    piece = game["piece"]
+
+    if callback.data == "tetris_left":
+
+        if valid_tetris_position(
+            game,
+            piece,
+            dx=-1
+        ):
+
+            piece["x"] -= 1
+
+        await callback.answer()
+
+    elif callback.data == "tetris_right":
+
+        if valid_tetris_position(
+            game,
+            piece,
+            dx=1
+        ):
+
+            piece["x"] += 1
+
+        await callback.answer()
+
+    elif callback.data == "tetris_down":
+
+        if valid_tetris_position(
+            game,
+            piece,
+            dy=1
+        ):
+
+            piece["y"] += 1
+
+            game["score"] += 1
+
+        await callback.answer()
+
+    elif callback.data == "tetris_rotate":
+
+        new_rotation = (
+            piece["rotation"] + 1
+        )
+
+        if valid_tetris_position(
+            game,
+            piece,
+            rotation=new_rotation
+        ):
+
+            piece["rotation"] = new_rotation
+
+        await callback.answer()
+
+    elif callback.data == "tetris_drop":
+
+        distance = 0
+
+        while valid_tetris_position(
+            game,
+            piece,
+            dy=1
+        ):
+
+            piece["y"] += 1
+
+            distance += 1
+
+        game["score"] += distance * 2
+
+        await callback.answer(
+            "⏬ БАМ!"
+        )
+
+    try:
+
+        await callback.message.edit_text(
+            render_tetris(game),
+            reply_markup=tetris_keyboard(),
+            parse_mode="HTML"
+        )
+
+    except Exception as error:
+
+        print(
+            "TETRIS BUTTON UPDATE:",
+            repr(error)
+        )
+
+
+# =========================================================
+# =========================================================
+# ОБЪЯВЛЕНИЯ
+# =========================================================
+# =========================================================
+
 
 @dp.callback_query(F.data == "new_ad")
 async def new_ad(
@@ -323,7 +1326,6 @@ async def new_ad(
         )
 
         return
-
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -378,7 +1380,6 @@ async def new_ad(
         ]
     )
 
-
     await callback.message.answer(
         "📢 <b>Новое объявление</b>\n\n"
         "Выбери категорию:",
@@ -386,14 +1387,13 @@ async def new_ad(
         parse_mode="HTML"
     )
 
-
     await state.set_state(
         AdForm.category
     )
 
 
 # =========================================================
-# ВЫБОР КАТЕГОРИИ
+# КАТЕГОРИЯ
 # =========================================================
 
 @dp.callback_query(
@@ -415,19 +1415,16 @@ async def choose_category(
         "adcat_other": "📦 Другое"
     }
 
-
     category = categories.get(
         callback.data,
         "📦 Другое"
     )
-
 
     await state.update_data(
         category=category
     )
 
     await callback.answer()
-
 
     await callback.message.answer(
         "📝 <b>Шаг 1/6</b>\n\n"
@@ -436,7 +1433,6 @@ async def choose_category(
         "Продам iPhone 13",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         AdForm.title
@@ -461,9 +1457,7 @@ async def get_title(
 
         return
 
-
     title = message.text.strip()
-
 
     if len(title) < 3:
 
@@ -473,18 +1467,15 @@ async def get_title(
 
         return
 
-
     await state.update_data(
         title=title[:150]
     )
-
 
     await message.answer(
         "📝 <b>Шаг 2/6</b>\n\n"
         "Напиши описание объявления.",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         AdForm.description
@@ -509,9 +1500,7 @@ async def get_description(
 
         return
 
-
     description = message.text.strip()
-
 
     if len(description) < 5:
 
@@ -521,11 +1510,9 @@ async def get_description(
 
         return
 
-
     await state.update_data(
         description=description[:2500]
     )
-
 
     await message.answer(
         "💰 <b>Шаг 3/6</b>\n\n"
@@ -534,7 +1521,6 @@ async def get_description(
         "«Договорная».",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         AdForm.price
@@ -559,18 +1545,15 @@ async def get_price(
 
         return
 
-
     await state.update_data(
         price=message.text.strip()[:100]
     )
-
 
     await message.answer(
         "📍 <b>Шаг 4/6</b>\n\n"
         "Укажи город.",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         AdForm.city
@@ -595,18 +1578,15 @@ async def get_city(
 
         return
 
-
     await state.update_data(
         city=message.text.strip()[:100]
     )
-
 
     await message.answer(
         "📞 <b>Шаг 5/6</b>\n\n"
         "Укажи контакт для связи.",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         AdForm.contact
@@ -631,11 +1611,9 @@ async def get_contact(
 
         return
 
-
     await state.update_data(
         contact=message.text.strip()[:200]
     )
-
 
     await message.answer(
         "📷 <b>Шаг 6/6</b>\n\n"
@@ -644,7 +1622,6 @@ async def get_contact(
         "«нет».",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         AdForm.photo
@@ -663,11 +1640,9 @@ async def publish_ad(
 
     photo_id = None
 
-
     if message.photo:
 
         photo_id = message.photo[-1].file_id
-
 
     elif message.text:
 
@@ -684,7 +1659,6 @@ async def publish_ad(
 
             return
 
-
     else:
 
         await message.answer(
@@ -694,9 +1668,7 @@ async def publish_ad(
 
         return
 
-
     user_id = message.from_user.id
-
 
     if ads_today(user_id) >= MAX_ADS_PER_DAY:
 
@@ -708,17 +1680,14 @@ async def publish_ad(
 
         return
 
-
     data = await state.get_data()
 
     category = data["category"]
-
 
     thread_id = TOPICS.get(
         category,
         TOPICS["📦 Другое"]
     )
-
 
     text = (
         f"{category}\n\n"
@@ -729,7 +1698,6 @@ async def publish_ad(
         f"📞 Контакт: {data['contact']}\n\n"
         f"🇺🇦 <b>UA Объявления</b>"
     )
-
 
     try:
 
@@ -751,7 +1719,6 @@ async def publish_ad(
                 parse_mode="HTML",
                 message_thread_id=thread_id
             )
-
 
         cursor.execute(
             """
@@ -788,20 +1755,17 @@ async def publish_ad(
             )
         )
 
-
         ad_id = cursor.lastrowid
 
         db.commit()
 
         await state.clear()
 
-
         used = ads_today(user_id)
 
         remaining = (
             MAX_ADS_PER_DAY - used
         )
-
 
         delete_keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
@@ -814,7 +1778,6 @@ async def publish_ad(
             ]
         )
 
-
         await message.answer(
             "✅ <b>Объявление опубликовано!</b>\n\n"
             f"📍 Раздел: {category}\n"
@@ -825,14 +1788,12 @@ async def publish_ad(
             parse_mode="HTML"
         )
 
-
     except Exception as error:
 
         print(
             "PUBLICATION ERROR:",
             repr(error)
         )
-
 
         await message.answer(
             "❌ <b>Не удалось опубликовать объявление.</b>\n\n"
@@ -842,7 +1803,7 @@ async def publish_ad(
 
 
 # =========================================================
-# УДАЛЕНИЕ ОБЪЯВЛЕНИЯ
+# УДАЛЕНИЕ
 # =========================================================
 
 @dp.callback_query(
@@ -867,7 +1828,6 @@ async def delete_ad(
 
         return
 
-
     cursor.execute(
         """
         SELECT
@@ -880,9 +1840,7 @@ async def delete_ad(
         (ad_id,)
     )
 
-
     row = cursor.fetchone()
-
 
     if not row:
 
@@ -893,11 +1851,9 @@ async def delete_ad(
 
         return
 
-
     owner_id = row[0]
 
     message_id = row[1]
-
 
     if (
         callback.from_user.id != owner_id
@@ -910,7 +1866,6 @@ async def delete_ad(
         )
 
         return
-
 
     try:
 
@@ -926,7 +1881,6 @@ async def delete_ad(
             repr(error)
         )
 
-
     cursor.execute(
         "DELETE FROM ads WHERE id = ?",
         (ad_id,)
@@ -934,11 +1888,9 @@ async def delete_ad(
 
     db.commit()
 
-
     await callback.answer(
         "🗑 Объявление удалено."
     )
-
 
     try:
 
@@ -973,11 +1925,9 @@ async def browse_category(
         "browse_other": "📦 Другое"
     }
 
-
     category = categories.get(
         callback.data
     )
-
 
     if not category:
 
@@ -985,9 +1935,7 @@ async def browse_category(
 
         return
 
-
     await callback.answer()
-
 
     cursor.execute(
         """
@@ -1005,9 +1953,7 @@ async def browse_category(
         (category,)
     )
 
-
     rows = cursor.fetchall()
-
 
     if not rows:
 
@@ -1019,12 +1965,10 @@ async def browse_category(
 
         return
 
-
     text = (
         f"{category}\n\n"
         "📋 <b>Последние объявления:</b>\n\n"
     )
-
 
     for row in rows:
 
@@ -1034,7 +1978,6 @@ async def browse_category(
         price = row[3]
         city = row[4]
 
-
         text += (
             f"📌 <b>{title}</b>\n"
             f"💰 {price}\n"
@@ -1042,7 +1985,6 @@ async def browse_category(
             f"{description[:120]}\n"
             f"🆔 #{ad_id}\n\n"
         )
-
 
     await callback.message.answer(
         text,
@@ -1063,7 +2005,6 @@ async def search(
 
     await callback.answer()
 
-
     await callback.message.answer(
         "🔎 <b>Поиск объявления</b>\n\n"
         "Напиши, что ищешь.\n\n"
@@ -1074,7 +2015,6 @@ async def search(
         "велосипед",
         parse_mode="HTML"
     )
-
 
     await state.set_state(
         SearchForm.query
@@ -1099,9 +2039,7 @@ async def search_query(
 
         return
 
-
     query = message.text.strip()
-
 
     if len(query) < 2:
 
@@ -1111,9 +2049,7 @@ async def search_query(
 
         return
 
-
     pattern = f"%{query}%"
-
 
     cursor.execute(
         """
@@ -1141,12 +2077,9 @@ async def search_query(
         )
     )
 
-
     rows = cursor.fetchall()
 
-
     await state.clear()
-
 
     if not rows:
 
@@ -1157,11 +2090,9 @@ async def search_query(
 
         return
 
-
     text = (
         "🔎 <b>Результаты поиска:</b>\n\n"
     )
-
 
     for row in rows:
 
@@ -1172,7 +2103,6 @@ async def search_query(
         price = row[4]
         city = row[5]
 
-
         text += (
             f"{category}\n"
             f"📌 <b>{title}</b>\n"
@@ -1181,7 +2111,6 @@ async def search_query(
             f"{description[:120]}\n"
             f"🆔 #{ad_id}\n\n"
         )
-
 
     await message.answer(
         text,
@@ -1211,7 +2140,7 @@ async def cancel(
 
 
 # =========================================================
-# АДМИН-ПАНЕЛЬ
+# АДМИН
 # =========================================================
 
 @dp.message(Command("admin"))
@@ -1227,7 +2156,6 @@ async def admin(
 
         return
 
-
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -1238,7 +2166,6 @@ async def admin(
             ]
         ]
     )
-
 
     await message.answer(
         "🛠 <b>Админ-панель</b>",
@@ -1265,9 +2192,7 @@ async def admin_stats(
 
         return
 
-
     await callback.answer()
-
 
     cursor.execute(
         "SELECT COUNT(*) FROM users"
@@ -1275,23 +2200,19 @@ async def admin_stats(
 
     users = cursor.fetchone()[0]
 
-
     cursor.execute(
         "SELECT COUNT(*) FROM ads"
     )
 
     total_ads = cursor.fetchone()[0]
 
-
     now = datetime.now(timezone.utc)
-
 
     day = now - timedelta(days=1)
 
     week = now - timedelta(days=7)
 
     month = now - timedelta(days=30)
-
 
     cursor.execute(
         """
@@ -1304,7 +2225,6 @@ async def admin_stats(
 
     day_ads = cursor.fetchone()[0]
 
-
     cursor.execute(
         """
         SELECT COUNT(*)
@@ -1316,7 +2236,6 @@ async def admin_stats(
 
     week_ads = cursor.fetchone()[0]
 
-
     cursor.execute(
         """
         SELECT COUNT(*)
@@ -1327,7 +2246,6 @@ async def admin_stats(
     )
 
     month_ads = cursor.fetchone()[0]
-
 
     await callback.message.answer(
         "📊 <b>Статистика</b>\n\n"
@@ -1341,7 +2259,7 @@ async def admin_stats(
 
 
 # =========================================================
-# RENDER WEB SERVER
+# WEB SERVER
 # =========================================================
 
 class HealthHandler(
@@ -1357,7 +2275,6 @@ class HealthHandler(
         self.wfile.write(
             b"UA Announcements Bot is running"
         )
-
 
     def log_message(
         self,
@@ -1376,7 +2293,6 @@ def run_web_server():
         )
     )
 
-
     server = HTTPServer(
         (
             "0.0.0.0",
@@ -1384,7 +2300,6 @@ def run_web_server():
         ),
         HealthHandler
     )
-
 
     server.serve_forever()
 
@@ -1400,7 +2315,6 @@ async def main():
         daemon=True
     ).start()
 
-
     if not TOKEN:
 
         print(
@@ -1409,16 +2323,13 @@ async def main():
 
         return
 
-
     bot = Bot(
         token=TOKEN
     )
 
-
     print(
         "🇺🇦 UA Announcements Bot started!"
     )
-
 
     await dp.start_polling(
         bot
