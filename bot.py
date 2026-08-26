@@ -32,6 +32,22 @@ MAX_ADS_PER_DAY = 5
 
 
 # =========================================================
+# ID ТЕМ ТВОЕЙ ГРУППЫ
+# =========================================================
+
+TOPICS = {
+    "🛒 Купить": 11316,
+    "💰 Продать": 11282,
+    "💼 Работа": 11291,
+    "🏠 Жильё": 11314,
+    "🚗 Авто": 11290,
+    "🛠 Услуги": 11313,
+    "📦 Другое": 11315,
+    "📰 Новости": 11281,
+}
+
+
+# =========================================================
 # BOT
 # =========================================================
 
@@ -74,6 +90,26 @@ CREATE TABLE IF NOT EXISTS ads (
     created_at TEXT NOT NULL
 )
 """)
+
+
+# ---------------------------------------------------------
+# Если база была создана старой версией
+# ---------------------------------------------------------
+
+cursor.execute(
+    "PRAGMA table_info(ads)"
+)
+
+columns = [
+    row[1]
+    for row in cursor.fetchall()
+]
+
+if "thread_id" not in columns:
+
+    cursor.execute(
+        "ALTER TABLE ads ADD COLUMN thread_id INTEGER"
+    )
 
 
 db.commit()
@@ -137,6 +173,12 @@ def main_keyboard():
             ],
             [
                 InlineKeyboardButton(
+                    text="📦 Другое",
+                    callback_data="browse_other"
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="🔎 Найти объявление",
                     callback_data="search"
                 )
@@ -179,7 +221,7 @@ def register_user(user_id):
 
 
 # =========================================================
-# ЛИМИТ ОБЪЯВЛЕНИЙ
+# ОБЪЯВЛЕНИЯ СЕГОДНЯ
 # =========================================================
 
 def ads_today(user_id):
@@ -234,7 +276,7 @@ async def start(
 
 
 # =========================================================
-# /ID — ID ТЕКУЩЕЙ ТЕМЫ
+# /ID
 # =========================================================
 
 @dp.message(Command("id"))
@@ -247,23 +289,20 @@ async def show_topic_id(
     if thread_id is None:
 
         await message.answer(
-            "🆔 Это сообщение находится в General.\n\n"
-            "Чтобы получить ID темы, отправь /id "
-            "внутри нужной темы."
+            "🆔 Это General."
         )
 
         return
 
 
     await message.answer(
-        "🆔 <b>ID этой темы:</b>\n\n"
-        f"<code>{thread_id}</code>",
+        f"🆔 ID темы: <code>{thread_id}</code>",
         parse_mode="HTML"
     )
 
 
 # =========================================================
-# НОВОЕ ОБЪЯВЛЕНИЕ
+# СОЗДАНИЕ ОБЪЯВЛЕНИЯ
 # =========================================================
 
 @dp.callback_query(F.data == "new_ad")
@@ -492,7 +531,7 @@ async def get_description(
     await message.answer(
         "💰 <b>Шаг 3/6</b>\n\n"
         "Укажи цену.\n\n"
-        "Если цена договорная — напиши "
+        "Если цены нет — напиши "
         "«Договорная».",
         parse_mode="HTML"
     )
@@ -640,7 +679,8 @@ async def publish_ad(
         ]:
 
             await message.answer(
-                "📷 Отправь фото или напиши «нет»."
+                "📷 Отправь фотографию "
+                "или напиши «нет»."
             )
 
             return
@@ -649,7 +689,8 @@ async def publish_ad(
     else:
 
         await message.answer(
-            "📷 Отправь фото или напиши «нет»."
+            "📷 Отправь фотографию "
+            "или напиши «нет»."
         )
 
         return
@@ -671,9 +712,29 @@ async def publish_ad(
 
     data = await state.get_data()
 
+    category = data["category"]
+
+
+    # -----------------------------------------------------
+    # Определяем тему
+    # -----------------------------------------------------
+
+    thread_id = TOPICS.get(
+        category
+    )
+
+
+    if thread_id is None:
+
+        thread_id = TOPICS["📦 Другое"]
+
+
+    # -----------------------------------------------------
+    # Формируем объявление
+    # -----------------------------------------------------
 
     text = (
-        f"{data['category']}\n\n"
+        f"{category}\n\n"
         f"📌 <b>{data['title']}</b>\n\n"
         f"{data['description']}\n\n"
         f"💰 Цена: {data['price']}\n"
@@ -685,27 +746,33 @@ async def publish_ad(
 
     try:
 
-        # Пока публикуем в General.
-        # После получения ID тем мы заменим это
-        # на автоматическое распределение.
+        # -------------------------------------------------
+        # Публикуем именно в нужную тему
+        # -------------------------------------------------
 
         if photo_id:
 
             sent = await message.bot.send_photo(
-                GROUP_USERNAME,
-                photo_id,
+                chat_id=GROUP_USERNAME,
+                photo=photo_id,
                 caption=text,
-                parse_mode="HTML"
+                parse_mode="HTML",
+                message_thread_id=thread_id
             )
 
         else:
 
             sent = await message.bot.send_message(
-                GROUP_USERNAME,
-                text,
-                parse_mode="HTML"
+                chat_id=GROUP_USERNAME,
+                text=text,
+                parse_mode="HTML",
+                message_thread_id=thread_id
             )
 
+
+        # -------------------------------------------------
+        # Сохраняем
+        # -------------------------------------------------
 
         cursor.execute(
             """
@@ -727,7 +794,7 @@ async def publish_ad(
             """,
             (
                 user_id,
-                data["category"],
+                category,
                 data["title"],
                 data["description"],
                 data["price"],
@@ -735,13 +802,15 @@ async def publish_ad(
                 data["contact"],
                 photo_id,
                 sent.message_id,
-                sent.message_thread_id,
+                thread_id,
                 datetime.now(
                     timezone.utc
                 ).isoformat()
             )
         )
 
+
+        ad_id = cursor.lastrowid
 
         db.commit()
 
@@ -750,15 +819,21 @@ async def publish_ad(
 
         used = ads_today(user_id)
 
-        remaining = MAX_ADS_PER_DAY - used
+        remaining = (
+            MAX_ADS_PER_DAY - used
+        )
 
+
+        # -------------------------------------------------
+        # Кнопка удаления
+        # -------------------------------------------------
 
         delete_keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
                         text="🗑 Удалить объявление",
-                        callback_data=f"delete_ad:{cursor.lastrowid}"
+                        callback_data=f"delete_ad:{ad_id}"
                     )
                 ]
             ]
@@ -767,7 +842,8 @@ async def publish_ad(
 
         await message.answer(
             "✅ <b>Объявление опубликовано!</b>\n\n"
-            f"📢 Использовано сегодня: "
+            f"📍 Раздел: {category}\n"
+            f"📢 Сегодня: "
             f"{used}/{MAX_ADS_PER_DAY}\n"
             f"📌 Осталось: {remaining}",
             reply_markup=delete_keyboard,
@@ -779,18 +855,19 @@ async def publish_ad(
 
         print(
             "PUBLICATION ERROR:",
-            error
+            repr(error)
         )
 
 
         await message.answer(
-            "❌ Не удалось опубликовать объявление.\n\n"
-            "Проверь права бота в группе."
+            "❌ <b>Не удалось опубликовать объявление.</b>\n\n"
+            "Проверь права бота и ID темы.",
+            parse_mode="HTML"
         )
 
 
 # =========================================================
-# УДАЛЕНИЕ ОБЪЯВЛЕНИЯ
+# УДАЛЕНИЕ
 # =========================================================
 
 @dp.callback_query(
@@ -818,7 +895,10 @@ async def delete_ad(
 
     cursor.execute(
         """
-        SELECT user_id, message_id
+        SELECT
+            user_id,
+            message_id,
+            thread_id
         FROM ads
         WHERE id = ?
         """,
@@ -832,24 +912,31 @@ async def delete_ad(
     if not row:
 
         await callback.answer(
-            "Объявление не найдено.",
+            "Объявление уже удалено.",
             show_alert=True
         )
 
         return
 
 
-    owner_id, message_id = row
+    owner_id = row[0]
+
+    message_id = row[1]
+
+    thread_id = row[2]
 
 
-    # Удалять может автор или админ
+    # -----------------------------------------------------
+    # Проверяем владельца
+    # -----------------------------------------------------
+
     if (
         callback.from_user.id != owner_id
         and callback.from_user.id != ADMIN_ID
     ):
 
         await callback.answer(
-            "⛔ Это не твоё объявление.",
+            "⛔ Ты не можешь удалить это объявление.",
             show_alert=True
         )
 
@@ -859,15 +946,15 @@ async def delete_ad(
     try:
 
         await callback.bot.delete_message(
-            GROUP_USERNAME,
-            message_id
+            chat_id=GROUP_USERNAME,
+            message_id=message_id
         )
 
     except Exception as error:
 
         print(
-            "DELETE ERROR:",
-            error
+            "DELETE MESSAGE ERROR:",
+            repr(error)
         )
 
 
@@ -897,7 +984,7 @@ async def delete_ad(
 
 
 # =========================================================
-# ПРОСМОТР КАТЕГОРИИ
+# ПРОСМОТР КАТЕГОРИЙ
 # =========================================================
 
 @dp.callback_query(
@@ -913,7 +1000,8 @@ async def browse_category(
         "browse_job": "💼 Работа",
         "browse_home": "🏠 Жильё",
         "browse_auto": "🚗 Авто",
-        "browse_services": "🛠 Услуги"
+        "browse_services": "🛠 Услуги",
+        "browse_other": "📦 Другое"
     }
 
 
@@ -925,6 +1013,7 @@ async def browse_category(
     if not category:
 
         await callback.answer()
+
         return
 
 
@@ -955,7 +1044,7 @@ async def browse_category(
 
         await callback.message.answer(
             f"{category}\n\n"
-            "Пока объявлений нет.",
+            "Пока здесь нет объявлений.",
             reply_markup=main_keyboard()
         )
 
@@ -968,13 +1057,14 @@ async def browse_category(
     )
 
 
-    for (
-        ad_id,
-        title,
-        description,
-        price,
-        city
-    ) in rows:
+    for row in rows:
+
+        ad_id = row[0]
+        title = row[1]
+        description = row[2]
+        price = row[3]
+        city = row[4]
+
 
         text += (
             f"📌 <b>{title}</b>\n"
@@ -1006,12 +1096,12 @@ async def search(
 
 
     await callback.message.answer(
-        "🔎 <b>Поиск</b>\n\n"
+        "🔎 <b>Поиск объявления</b>\n\n"
         "Напиши, что ищешь.\n\n"
         "Например:\n"
         "iPhone\n"
         "водитель\n"
-        "квартира Одесса\n"
+        "квартира\n"
         "велосипед",
         parse_mode="HTML"
     )
@@ -1021,6 +1111,10 @@ async def search(
         SearchForm.query
     )
 
+
+# =========================================================
+# РЕЗУЛЬТАТ ПОИСКА
+# =========================================================
 
 @dp.message(SearchForm.query)
 async def search_query(
@@ -1096,19 +1190,19 @@ async def search_query(
 
 
     text = (
-        f"🔎 <b>Результаты:</b> "
-        f"{query}\n\n"
+        f"🔎 <b>Результаты поиска:</b>\n\n"
     )
 
 
-    for (
-        ad_id,
-        category,
-        title,
-        description,
-        price,
-        city
-    ) in rows:
+    for row in rows:
+
+        ad_id = row[0]
+        category = row[1]
+        title = row[2]
+        description = row[3]
+        price = row[4]
+        city = row[5]
+
 
         text += (
             f"{category}\n"
@@ -1142,13 +1236,13 @@ async def cancel(
     await callback.answer()
 
     await callback.message.answer(
-        "❌ Отменено.",
+        "❌ Создание объявления отменено.",
         reply_markup=main_keyboard()
     )
 
 
 # =========================================================
-# АДМИНКА
+# АДМИН
 # =========================================================
 
 @dp.message(Command("admin"))
@@ -1278,7 +1372,7 @@ async def admin_stats(
 
 
 # =========================================================
-# RENDER WEB SERVER
+# RENDER
 # =========================================================
 
 class HealthHandler(
@@ -1327,7 +1421,7 @@ def run_web_server():
 
 
 # =========================================================
-# MAIN
+# ЗАПУСК
 # =========================================================
 
 async def main():
@@ -1362,12 +1456,6 @@ async def main():
     )
 
 
-# =========================================================
-# START
-# =========================================================
-
 if __name__ == "__main__":
 
-    asyncio.run(
-        main()
-    )
+    asyncio.run(main())
