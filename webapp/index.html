@@ -3,305 +3,391 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>UA Games • Premium</title>
+<title>UA Games</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:#05070f;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{position:fixed;inset:0;overscroll-behavior:none}
-#app{width:100%;max-width:540px;height:100%;margin:auto;position:relative;overflow:hidden;background:radial-gradient(ellipse at 20% -10%,rgba(88,101,242,.25) 0%,transparent 45%),radial-gradient(ellipse at 90% 20%,rgba(0,212,255,.12) 0%,transparent 40%),radial-gradient(ellipse at 50% 100%,rgba(120,40,255,.15) 0%,transparent 50%),#05070f}
-
-.screen{width:100%;height:100%;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom));display:none;flex-direction:column;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#07090f;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{position:fixed;inset:0}
+#app{width:100%;max-width:540px;height:100%;margin:auto;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% -25%,rgba(99,102,241,.32),transparent 55%),#07090f}
+.screen{width:100%;height:100%;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom));display:none;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .screen.active{display:flex}
 
-.logo-area{text-align:center;margin-top:12px;margin-bottom:8px;perspective:1000px}
-.logo-icon{font-size:64px;display:inline-block;transform:rotateX(15deg) rotateY(-8deg);filter:drop-shadow(0 12px 30px rgba(88,101,242,.55));animation:floatLogo 4s ease-in-out infinite}
-@keyframes floatLogo{0%,100%{transform:rotateX(15deg) rotateY(-8deg) translateY(0)}50%{transform:rotateX(18deg) rotateY(-5deg) translateY(-8px)}}
-.title{font-size:34px;font-weight:950;letter-spacing:-1.5px;margin-top:6px;background:linear-gradient(135deg,#fff 30%,#a5b4fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 40px rgba(99,102,241,.4)}
-.subtitle{color:#8b95b0;font-size:13px;margin-top:6px;letter-spacing:.3px}
+/* ===== MENU (Game Store style + 3D) ===== */
+.logo-area{text-align:center;margin:10px 0 6px;perspective:800px}
+.logo-icon{font-size:56px;display:inline-block;transform:rotateX(12deg);filter:drop-shadow(0 10px 25px rgba(99,102,241,.5))}
+.title{font-size:30px;font-weight:900;letter-spacing:-1px;margin-top:4px;background:linear-gradient(135deg,#fff,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#94a3b8;font-size:13px;margin-top:4px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 12px;font-size:15px;font-weight:800}
+.section-title span{background:rgba(99,102,241,.2);color:#a5b4fc;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(99,102,241,.3)}
 
-.section-title{display:flex;justify-content:space-between;align-items:center;margin:26px 4px 14px;font-size:17px;font-weight:800}
-.section-title span{background:rgba(99,102,241,.18);color:#a5b4fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid rgba(99,102,241,.25)}
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:24px;perspective:1000px}
+.game-card{
+  position:relative;min-height:148px;border:none;border-radius:20px;
+  background:linear-gradient(165deg,rgba(30,41,59,.9),rgba(15,23,42,.95));
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:0 12px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
+  transform-style:preserve-3d;transition:transform .18s ease,box-shadow .18s;
+  overflow:hidden;cursor:pointer;
+}
+.game-card::after{content:"";position:absolute;width:120px;height:120px;right:-40px;top:-40px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.25),transparent 70%);filter:blur(18px)}
+.game-card:active{transform:scale(.95) rotateX(8deg);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.game-icon{display:block;font-size:40px;margin:16px 0 8px 14px;transform:translateZ(25px);filter:drop-shadow(0 6px 12px rgba(0,0,0,.4))}
+.game-card-name{display:block;font-size:15px;font-weight:800;margin-left:14px;transform:translateZ(15px)}
+.game-card-record{margin:4px 0 0 14px;color:#64748b;font-size:11px;transform:translateZ(10px)}
+.menu-bottom{text-align:center;color:#475569;font-size:12px;padding:8px 0 20px}
 
-.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding-bottom:30px;perspective:1200px}
-.game-card{position:relative;min-height:158px;border:none;border-radius:24px;color:#fff;overflow:hidden;background:linear-gradient(160deg,rgba(30,35,60,.95),rgba(12,15,28,.98));box-shadow:0 10px 25px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.1);transform-style:preserve-3d;transition:transform .18s ease,box-shadow .18s ease;cursor:pointer}
-.game-card::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(99,102,241,.15),transparent 60%);opacity:0;transition:.2s}
-.game-card::after{content:"";position:absolute;width:140px;height:140px;right:-50px;top:-50px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.35),transparent 70%);filter:blur(20px);transform:translateZ(-20px)}
-.game-card:active{transform:scale(.94) rotateX(6deg);box-shadow:0 4px 15px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08)}
-.game-card:active::before{opacity:1}
-.game-icon{position:relative;display:block;font-size:48px;margin:18px 0 10px 16px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.4));transform:translateZ(30px)}
-.game-card-name{position:relative;display:block;font-size:16px;font-weight:850;margin-left:16px;transform:translateZ(20px)}
-.game-card-record{position:relative;margin:6px 0 0 16px;color:#7a849e;font-size:11px;font-weight:600;transform:translateZ(15px)}
-.game-card[data-color="purple"]::after{background:radial-gradient(circle,rgba(139,92,246,.4),transparent 70%)}
-.game-card[data-color="blue"]::after{background:radial-gradient(circle,rgba(59,130,246,.4),transparent 70%)}
-.game-card[data-color="cyan"]::after{background:radial-gradient(circle,rgba(34,211,238,.35),transparent 70%)}
-.game-card[data-color="green"]::after{background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%)}
-.game-card[data-color="orange"]::after{background:radial-gradient(circle,rgba(249,115,22,.4),transparent 70%)}
-.game-card[data-color="pink"]::after{background:radial-gradient(circle,rgba(236,72,153,.4),transparent 70%)}
-.game-card[data-color="red"]::after{background:radial-gradient(circle,rgba(239,68,68,.35),transparent 70%)}
-.menu-bottom{text-align:center;color:#5a6478;font-size:12px;padding:8px 0 28px}
+/* ===== GAME UI ===== */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.header button{width:44px;height:44px;border:0;border-radius:14px;color:#fff;background:rgba(255,255,255,.08);font-size:18px}
+.game-name{font-size:18px;font-weight:800}
+.score{text-align:center;font-size:17px;font-weight:800;margin-bottom:12px}
+.tip{text-align:center;color:#64748b;font-size:12px;margin:10px 0}
+.game-canvas{display:block;margin:auto;background:#0b1120;border-radius:18px;box-shadow:0 16px 40px rgba(0,0,0,.5);touch-action:none}
+.bottom-buttons{display:flex;gap:10px;margin-top:12px}
+.bottom-buttons button{flex:1;min-height:50px;border:0;border-radius:14px;color:#fff;background:rgba(255,255,255,.08);font-size:14px;font-weight:700}
 
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.header button{width:46px;height:46px;border:0;border-radius:16px;color:#fff;background:rgba(255,255,255,.07);backdrop-filter:blur(10px);font-size:20px;box-shadow:0 4px 15px rgba(0,0,0,.25)}
-.game-name{font-size:20px;font-weight:900}
-.score{text-align:center;font-size:18px;font-weight:900;margin-bottom:14px;letter-spacing:.5px}
-.tip{text-align:center;color:#6b758c;font-size:12px;margin:12px 0}
-.game-canvas{display:block;margin:auto;background:#0a0e1a;border-radius:22px;box-shadow:0 20px 50px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06);touch-action:none}
+/* 2048 */
+.board2048{width:min(94vw,380px);aspect-ratio:1;margin:auto;padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-radius:18px;background:#111827;touch-action:none}
+.tile{border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;background:#1e293b}
+.tile[data-value="2"]{background:#e0e7ff;color:#1e293b}.tile[data-value="4"]{background:#c7d2fe;color:#1e293b}
+.tile[data-value="8"]{background:#fb923c}.tile[data-value="16"]{background:#f97316}.tile[data-value="32"]{background:#ef4444}
+.tile[data-value="64"]{background:#dc2626}.tile[data-value="128"]{background:#fbbf24}.tile[data-value="256"]{background:#f59e0b}
+.tile[data-value="512"]{background:#d97706}.tile[data-value="1024"]{background:#a78bfa}.tile[data-value="2048"]{background:#6366f1}
 
-.bottom-buttons{display:flex;gap:10px;margin-top:14px}
-.bottom-buttons button{flex:1;min-height:54px;border:0;border-radius:18px;color:#fff;background:rgba(255,255,255,.08);font-size:15px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.25)}
-.bottom-buttons button:active{transform:scale(.96)}
-.primary{background:linear-gradient(135deg,#4f6ef7,#8b5cf6)!important;box-shadow:0 8px 25px rgba(79,110,247,.4)!important}
-
-.board2048{width:min(94vw,400px);aspect-ratio:1;margin:auto;padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:9px;border-radius:24px;background:#12182a;box-shadow:0 15px 40px rgba(0,0,0,.4);touch-action:none}
-.tile{border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:950;background:#1e2538;transition:.1s;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-.tile[data-value="2"]{background:#e0e7ff;color:#1e293b}
-.tile[data-value="4"]{background:#c7d2fe;color:#1e293b}
-.tile[data-value="8"]{background:#fb923c}
-.tile[data-value="16"]{background:#f97316}
-.tile[data-value="32"]{background:#ef4444}
-.tile[data-value="64"]{background:#dc2626}
-.tile[data-value="128"]{background:#fbbf24}
-.tile[data-value="256"]{background:#f59e0b}
-.tile[data-value="512"]{background:#d97706}
-.tile[data-value="1024"]{background:#a78bfa}
-.tile[data-value="2048"]{background:#6366f1}
-.tile[data-value="4096"]{background:#22d3ee}
-
-.memory-grid{width:min(94vw,400px);margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.memory-card{aspect-ratio:1;border:0;border-radius:18px;color:transparent;background:linear-gradient(145deg,#1e293b,#0f172a);font-size:32px;box-shadow:0 8px 20px rgba(0,0,0,.35);transition:.15s}
+/* Memory */
+.memory-grid{width:min(94vw,380px);margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.memory-card{aspect-ratio:1;border:0;border-radius:14px;color:transparent;background:linear-gradient(145deg,#1e293b,#0f172a);font-size:28px}
 .memory-card.open,.memory-card.done{color:#fff;background:linear-gradient(145deg,#4f46e5,#7c3aed)}
 
-.mines{width:min(94vw,400px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}
-.mine-cell{aspect-ratio:1;border:0;border-radius:6px;color:#fff;background:#1e293b;font-size:14px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+/* Mines */
+.mines{width:min(94vw,380px);display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin:auto}
+.mine-cell{aspect-ratio:1;border:0;border-radius:5px;color:#fff;background:#1e293b;font-size:13px;font-weight:800}
 .mine-cell.open{background:#0f172a}
 
-.fifteen{width:min(94vw,400px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:auto;padding:8px;border-radius:22px;background:#12182a}
-.fifteen button{border:0;border-radius:14px;background:linear-gradient(145deg,#4f46e5,#7c3aed);color:#fff;font-size:26px;font-weight:950;box-shadow:0 6px 18px rgba(79,70,229,.4)}
-.fifteen .empty{background:#0a0e18;box-shadow:none}
+/* Fifteen */
+.fifteen{width:min(94vw,380px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:auto;padding:7px;border-radius:16px;background:#111827}
+.fifteen button{border:0;border-radius:12px;background:linear-gradient(145deg,#4f46e5,#7c3aed);color:#fff;font-size:24px;font-weight:900}
+.fifteen .empty{background:#0a0e18}
 
-.lights{width:min(90vw,380px);aspect-ratio:1;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:auto}
-.light{border:0;border-radius:14px;background:#151b2d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
-.light.on{background:linear-gradient(145deg,#6366f1,#22d3ee);box-shadow:0 0 25px rgba(99,102,241,.5)}
+/* Lights */
+.lights{width:min(90vw,360px);aspect-ratio:1;display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:auto}
+.light{border:0;border-radius:12px;background:#151b2d}
+.light.on{background:linear-gradient(145deg,#6366f1,#22d3ee);box-shadow:0 0 20px rgba(99,102,241,.45)}
 
-.color-box{width:min(85vw,340px);aspect-ratio:1;margin:30px auto 18px;border-radius:32px;box-shadow:0 25px 60px rgba(0,0,0,.5)}
-.color-options{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.color-options button{height:58px;border:0;border-radius:18px;color:#fff;font-weight:900;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+/* Color */
+.color-box{width:min(85vw,320px);aspect-ratio:1;margin:28px auto 16px;border-radius:28px;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.color-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.color-options button{height:54px;border:0;border-radius:16px;color:#fff;font-weight:800}
 
-.math-question{text-align:center;font-size:48px;font-weight:950;margin:40px 0}
-.math-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.math-options button{min-height:70px;border:0;border-radius:20px;background:#1e293b;color:#fff;font-size:24px;font-weight:900;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+/* Math */
+.math-question{text-align:center;font-size:42px;font-weight:900;margin:32px 0}
+.math-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.math-options button{min-height:64px;border:0;border-radius:16px;background:#1e293b;color:#fff;font-size:22px;font-weight:800}
 
-.word-question{text-align:center;font-size:28px;font-weight:950;margin:40px 0}
-.word-options{display:grid;gap:12px}
-.word-options button{min-height:56px;border:0;border-radius:18px;color:#fff;background:#1e293b;font-size:17px;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+/* Words / Quiz */
+.quiz-question{text-align:center;font-size:18px;font-weight:700;margin:20px 0 24px;line-height:1.4;padding:0 8px}
+.quiz-options{display:grid;gap:10px}
+.quiz-options button{min-height:52px;border:0;border-radius:14px;color:#fff;background:#1e293b;font-size:15px;font-weight:700;text-align:left;padding:0 16px}
 
-.overlay{position:absolute;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(2,4,12,.82);backdrop-filter:blur(16px)}
+/* Modal */
+.overlay{position:absolute;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(2,4,12,.85);backdrop-filter:blur(12px)}
 .overlay.active{display:flex}
-.modal{width:100%;max-width:340px;padding:32px 28px;text-align:center;border-radius:28px;background:linear-gradient(160deg,#151b2e,#0c101c);box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08)}
-.modal-title{font-size:26px;font-weight:950}
-.modal-score{color:#94a3b8;font-size:17px;margin:14px 0 26px}
-.modal button{width:100%;min-height:54px;margin-top:10px;border:0;border-radius:18px;color:#fff;background:linear-gradient(135deg,#4f6ef7,#8b5cf6);font-size:16px;font-weight:900;box-shadow:0 10px 30px rgba(79,110,247,.4)}
-.modal button.secondary{background:rgba(255,255,255,.08);box-shadow:none}
-
-@media(max-width:370px){.game-card{min-height:140px}.game-icon{font-size:42px}.game-card-name{font-size:14px}}
+.modal{width:100%;max-width:340px;padding:28px 24px;text-align:center;border-radius:24px;background:linear-gradient(160deg,#151b2e,#0c101c);box-shadow:0 25px 60px rgba(0,0,0,.7)}
+.modal-title{font-size:24px;font-weight:900}
+.modal-score{color:#94a3b8;font-size:16px;margin:12px 0 22px}
+.modal button{width:100%;min-height:50px;margin-top:8px;border:0;border-radius:14px;color:#fff;background:linear-gradient(135deg,#4f6ef7,#8b5cf6);font-size:15px;font-weight:800}
+.modal button.secondary{background:rgba(255,255,255,.08)}
 </style>
 </head>
 <body>
 <div id="app">
 
 <div id="menu" class="screen active">
-    <div class="logo-area">
-        <div class="logo-icon">🎮</div>
-        <div class="title">UA GAMES</div>
-        <div class="subtitle">Премиум игровой сервис</div>
-    </div>
-    <div class="section-title">🎯 Коллекция игр <span>20 ИГР</span></div>
-    <div class="menu-grid">
-        <button class="game-card" data-color="green" onclick="openGame('snake')"><span class="game-icon">🐍</span><span class="game-card-name">Змейка</span><div class="game-card-record" id="rec-snake">Рекорд: 0</div></button>
-        <button class="game-card" data-color="purple" onclick="openGame('tetris')"><span class="game-icon">🧱</span><span class="game-card-name">Тетрис</span><div class="game-card-record" id="rec-tetris">Рекорд: 0</div></button>
-        <button class="game-card" data-color="orange" onclick="openGame('2048')"><span class="game-icon">🔢</span><span class="game-card-name">2048</span><div class="game-card-record" id="rec-2048">Рекорд: 0</div></button>
-        <button class="game-card" data-color="blue" onclick="openGame('memory')"><span class="game-icon">🧠</span><span class="game-card-name">Память</span><div class="game-card-record" id="rec-memory">Рекорд: 0</div></button>
-        <button class="game-card" data-color="red" onclick="openGame('mines')"><span class="game-icon">💣</span><span class="game-card-name">Сапёр</span><div class="game-card-record" id="rec-mines">Рекорд: 0</div></button>
-        <button class="game-card" data-color="cyan" onclick="openGame('pong')"><span class="game-icon">🏓</span><span class="game-card-name">Pong</span><div class="game-card-record" id="rec-pong">Рекорд: 0</div></button>
-        <button class="game-card" data-color="purple" onclick="openGame('breakout')"><span class="game-icon">🧱</span><span class="game-card-name">Breakout</span><div class="game-card-record" id="rec-breakout">Рекорд: 0</div></button>
-        <button class="game-card" data-color="orange" onclick="openGame('flappy')"><span class="game-icon">🐦</span><span class="game-card-name">Flappy</span><div class="game-card-record" id="rec-flappy">Рекорд: 0</div></button>
-        <button class="game-card" data-color="blue" onclick="openGame('space')"><span class="game-icon">🚀</span><span class="game-card-name">Космос</span><div class="game-card-record" id="rec-space">Рекорд: 0</div></button>
-        <button class="game-card" data-color="green" onclick="openGame('runner')"><span class="game-icon">🏃</span><span class="game-card-name">Runner</span><div class="game-card-record" id="rec-runner">Рекорд: 0</div></button>
-        <button class="game-card" data-color="cyan" onclick="openGame('reaction')"><span class="game-icon">⚡</span><span class="game-card-name">Реакция</span><div class="game-card-record" id="rec-reaction">Рекорд: 0</div></button>
-        <button class="game-card" data-color="pink" onclick="openGame('shoot')"><span class="game-icon">🎯</span><span class="game-card-name">Тир</span><div class="game-card-record" id="rec-shoot">Рекорд: 0</div></button>
-        <button class="game-card" data-color="blue" onclick="openGame('math')"><span class="game-icon">🧮</span><span class="game-card-name">Математика</span><div class="game-card-record" id="rec-math">Рекорд: 0</div></button>
-        <button class="game-card" data-color="cyan" onclick="openGame('lights')"><span class="game-icon">💡</span><span class="game-card-name">Lights Out</span><div class="game-card-record" id="rec-lights">Рекорд: 0</div></button>
-        <button class="game-card" data-color="purple" onclick="openGame('fifteen')"><span class="game-icon">🧩</span><span class="game-card-name">Пятнашки</span><div class="game-card-record" id="rec-fifteen">Рекорд: 0</div></button>
-        <button class="game-card" data-color="pink" onclick="openGame('color')"><span class="game-icon">🎨</span><span class="game-card-name">Color Match</span><div class="game-card-record" id="rec-color">Рекорд: 0</div></button>
-        <button class="game-card" data-color="orange" onclick="openGame('stack')"><span class="game-icon">🪜</span><span class="game-card-name">Stack</span><div class="game-card-record" id="rec-stack">Рекорд: 0</div></button>
-        <button class="game-card" data-color="blue" onclick="openGame('tap')"><span class="game-icon">👆</span><span class="game-card-name">Tap Challenge</span><div class="game-card-record" id="rec-tap">Рекорд: 0</div></button>
-        <button class="game-card" data-color="red" onclick="openGame('dodge')"><span class="game-icon">🔴</span><span class="game-card-name">Dodge</span><div class="game-card-record" id="rec-dodge">Рекорд: 0</div></button>
-        <button class="game-card" data-color="green" onclick="openGame('words')"><span class="game-icon">🔤</span><span class="game-card-name">Слова</span><div class="game-card-record" id="rec-words">Рекорд: 0</div></button>
-    </div>
-    <div class="menu-bottom">🏆 Рекорды сохраняются автоматически</div>
+  <div class="logo-area">
+    <div class="logo-icon">🎮</div>
+    <div class="title">UA GAMES</div>
+    <div class="subtitle">Игровой сервис</div>
+  </div>
+  <div class="section-title">Коллекция игр <span>20 ИГР</span></div>
+  <div class="menu-grid">
+    <button class="game-card" onclick="openGame('snake')"><span class="game-icon">🐍</span><span class="game-card-name">Змейка</span><div class="game-card-record" id="rec-snake">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('tetris')"><span class="game-icon">🧱</span><span class="game-card-name">Тетрис</span><div class="game-card-record" id="rec-tetris">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('2048')"><span class="game-icon">🔢</span><span class="game-card-name">2048</span><div class="game-card-record" id="rec-2048">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('memory')"><span class="game-icon">🧠</span><span class="game-card-name">Память</span><div class="game-card-record" id="rec-memory">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('mines')"><span class="game-icon">💣</span><span class="game-card-name">Сапёр</span><div class="game-card-record" id="rec-mines">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('pong')"><span class="game-icon">🏓</span><span class="game-card-name">Pong</span><div class="game-card-record" id="rec-pong">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('breakout')"><span class="game-icon">🧱</span><span class="game-card-name">Breakout</span><div class="game-card-record" id="rec-breakout">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('flappy')"><span class="game-icon">🐦</span><span class="game-card-name">Flappy</span><div class="game-card-record" id="rec-flappy">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('space')"><span class="game-icon">🚀</span><span class="game-card-name">Космос</span><div class="game-card-record" id="rec-space">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('runner')"><span class="game-icon">🏃</span><span class="game-card-name">Runner</span><div class="game-card-record" id="rec-runner">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('reaction')"><span class="game-icon">⚡</span><span class="game-card-name">Реакция</span><div class="game-card-record" id="rec-reaction">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('shoot')"><span class="game-icon">🎯</span><span class="game-card-name">Тир</span><div class="game-card-record" id="rec-shoot">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('math')"><span class="game-icon">🧮</span><span class="game-card-name">Математика</span><div class="game-card-record" id="rec-math">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('lights')"><span class="game-icon">💡</span><span class="game-card-name">Lights Out</span><div class="game-card-record" id="rec-lights">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('fifteen')"><span class="game-icon">🧩</span><span class="game-card-name">Пятнашки</span><div class="game-card-record" id="rec-fifteen">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('color')"><span class="game-icon">🎨</span><span class="game-card-name">Color Match</span><div class="game-card-record" id="rec-color">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('stack')"><span class="game-icon">🪜</span><span class="game-card-name">Stack</span><div class="game-card-record" id="rec-stack">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('tap')"><span class="game-icon">👆</span><span class="game-card-name">Tap Challenge</span><div class="game-card-record" id="rec-tap">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('dodge')"><span class="game-icon">🔴</span><span class="game-card-name">Dodge</span><div class="game-card-record" id="rec-dodge">Рекорд: 0</div></button>
+    <button class="game-card" onclick="openGame('words')"><span class="game-icon">🔤</span><span class="game-card-name">Викторина</span><div class="game-card-record" id="rec-words">Рекорд: 0</div></button>
+  </div>
+  <div class="menu-bottom">🏆 Рекорды сохраняются автоматически</div>
 </div>
 
 <div id="gameScreen" class="screen">
-    <div class="header">
-        <button onclick="backToMenu()">←</button>
-        <div id="gameTitle" class="game-name">Игра</div>
-        <button onclick="restartGame()">🔄</button>
-    </div>
-    <div id="gameScore" class="score">🏆 0</div>
-    <div id="gameContent"></div>
-    <div id="gameTip" class="tip"></div>
+  <div class="header">
+    <button onclick="backToMenu()">←</button>
+    <div id="gameTitle" class="game-name">Игра</div>
+    <button onclick="restartGame()">🔄</button>
+  </div>
+  <div id="gameScore" class="score">🏆 0</div>
+  <div id="gameContent"></div>
+  <div id="gameTip" class="tip"></div>
 </div>
 
 <div id="gameOver" class="overlay">
-    <div class="modal">
-        <div id="gameOverTitle" class="modal-title">Игра окончена</div>
-        <div id="gameOverScore" class="modal-score">Очки: 0</div>
-        <button onclick="restartGame()">🔄 Играть снова</button>
-        <button class="secondary" onclick="backToMenu()">🎮 Все игры</button>
-    </div>
+  <div class="modal">
+    <div id="gameOverTitle" class="modal-title">Игра окончена</div>
+    <div id="gameOverScore" class="modal-score">Очки: 0</div>
+    <button onclick="restartGame()">🔄 Играть снова</button>
+    <button class="secondary" onclick="backToMenu()">🎮 Все игры</button>
+  </div>
 </div>
-
 </div>
 
 <script>
-const tg = window.Telegram?.WebApp;
-if(tg){tg.ready();tg.expand();try{if(typeof tg.disableVerticalSwipes==="function")tg.disableVerticalSwipes()}catch(e){}try{tg.setHeaderColor("#05070f");tg.setBackgroundColor("#05070f")}catch(e){}}
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#07090f");tg.setBackgroundColor("#07090f")}catch(e){}}
 
 let currentGame="",gameTimer=null,animation=null,score=0;
 
-function haptic(type="light"){try{tg?.HapticFeedback?.impactOccurred(type)}catch(e){}}
-function getRecord(game){return Number(localStorage.getItem("record_"+game)||0)}
-function saveRecord(game,value){const old=getRecord(game);if(value>old){localStorage.setItem("record_"+game,String(value));return true}return false}
+function haptic(t="light"){try{tg?.HapticFeedback?.impactOccurred(t)}catch(e){}}
+function getRecord(g){return Number(localStorage.getItem("record_"+g)||0)}
+function saveRecord(g,v){if(v>getRecord(g)){localStorage.setItem("record_"+g,String(v));return true}return false}
 function refreshRecords(){["snake","tetris","2048","memory","mines","pong","breakout","flappy","space","runner","reaction","shoot","math","lights","fifteen","color","stack","tap","dodge","words"].forEach(g=>{const el=document.getElementById("rec-"+g);if(el)el.textContent="Рекорд: "+getRecord(g)})}
 refreshRecords();
-function clearGameTimers(){if(gameTimer){clearTimeout(gameTimer);gameTimer=null}if(animation){cancelAnimationFrame(animation);animation=null}}
+function clearTimers(){if(gameTimer){clearTimeout(gameTimer);gameTimer=null}if(animation){cancelAnimationFrame(animation);animation=null}}
 
-function openGame(game){clearGameTimers();currentGame=game;document.getElementById("menu").classList.remove("active");document.getElementById("gameScreen").classList.add("active");document.getElementById("gameOver").classList.remove("active");startGame(game)}
-function backToMenu(){clearGameTimers();document.getElementById("gameOver").classList.remove("active");document.getElementById("gameScreen").classList.remove("active");document.getElementById("menu").classList.add("active");document.getElementById("menu").scrollTop=0;refreshRecords()}
-function restartGame(){document.getElementById("gameOver").classList.remove("active");clearGameTimers();startGame(currentGame)}
-function gameOver(title,value){clearGameTimers();const isNew=saveRecord(currentGame,value);document.getElementById("gameOverTitle").textContent=isNew?"🏆 НОВЫЙ РЕКОРД!":title;document.getElementById("gameOverScore").textContent="Очки: "+value+(isNew?" 🔥":"");document.getElementById("gameOver").classList.add("active");refreshRecords();haptic("medium")}
-function setScore(value){score=value;document.getElementById("gameScore").textContent="🏆 "+value}
-function setTitle(title){document.getElementById("gameTitle").textContent=title}
-function setTip(text){document.getElementById("gameTip").textContent=text}
+function openGame(g){clearTimers();currentGame=g;document.getElementById("menu").classList.remove("active");document.getElementById("gameScreen").classList.add("active");document.getElementById("gameOver").classList.remove("active");startGame(g)}
+function backToMenu(){clearTimers();document.getElementById("gameOver").classList.remove("active");document.getElementById("gameScreen").classList.remove("active");document.getElementById("menu").classList.add("active");document.getElementById("menu").scrollTop=0;refreshRecords()}
+function restartGame(){document.getElementById("gameOver").classList.remove("active");clearTimers();startGame(currentGame)}
+function gameOver(title,val){clearTimers();const isNew=saveRecord(currentGame,val);document.getElementById("gameOverTitle").textContent=isNew?"🏆 НОВЫЙ РЕКОРД!":title;document.getElementById("gameOverScore").textContent="Очки: "+val+(isNew?" 🔥":"");document.getElementById("gameOver").classList.add("active");refreshRecords();haptic("medium")}
+function setScore(v){score=v;document.getElementById("gameScore").textContent="🏆 "+v}
+function setTitle(t){document.getElementById("gameTitle").textContent=t}
+function setTip(t){document.getElementById("gameTip").textContent=t}
 
-function startGame(game){
-    document.getElementById("gameContent").innerHTML="";setScore(0);
-    if(game==="snake")return startSnake();
-    if(game==="tetris")return startTetris();
-    if(game==="2048")return start2048();
-    if(game==="memory")return startMemory();
-    if(game==="mines")return startMines();
-    if(game==="pong")return startPong();
-    if(game==="breakout")return startBreakout();
-    if(game==="flappy")return startFlappy();
-    if(game==="space")return startSpace();
-    if(game==="runner")return startRunner();
-    if(game==="reaction")return startReaction();
-    if(game==="shoot")return startShoot();
-    if(game==="math")return startMath();
-    if(game==="lights")return startLights();
-    if(game==="fifteen")return startFifteen();
-    if(game==="color")return startColor();
-    if(game==="stack")return startStack();
-    if(game==="tap")return startTap();
-    if(game==="dodge")return startDodge();
-    if(game==="words")return startWords();
+function startGame(g){
+  document.getElementById("gameContent").innerHTML="";setScore(0);
+  if(g==="snake")return startSnake();
+  if(g==="tetris")return startTetris();
+  if(g==="2048")return start2048();
+  if(g==="memory")return startMemory();
+  if(g==="mines")return startMines();
+  if(g==="pong")return startPong();
+  if(g==="breakout")return startBreakout();
+  if(g==="flappy")return startFlappy();
+  if(g==="space")return startSpace();
+  if(g==="runner")return startRunner();
+  if(g==="reaction")return startReaction();
+  if(g==="shoot")return startShoot();
+  if(g==="math")return startMath();
+  if(g==="lights")return startLights();
+  if(g==="fifteen")return startFifteen();
+  if(g==="color")return startColor();
+  if(g==="stack")return startStack();
+  if(g==="tap")return startTap();
+  if(g==="dodge")return startDodge();
+  if(g==="words")return startWords();
 }
 
-/* ==================== 2048 ==================== */
-let board2048=[],touch2048X=0,touch2048Y=0;
-function start2048(){setTitle("🔢 2048");setTip("👆 Свайпай по полю");document.getElementById("gameContent").innerHTML=`<div id="board2048" class="board2048"></div><div class="tip">Соединяй одинаковые числа</div>`;board2048=Array.from({length:4},()=>Array(4).fill(0));add2048Tile();add2048Tile();draw2048();const board=document.getElementById("board2048");board.addEventListener("touchstart",e=>{e.preventDefault();const t=e.changedTouches[0];touch2048X=t.clientX;touch2048Y=t.clientY},{passive:false});board.addEventListener("touchend",e=>{e.preventDefault();const t=e.changedTouches[0];const dx=t.clientX-touch2048X,dy=t.clientY-touch2048Y;if(Math.abs(dx)<15&&Math.abs(dy)<15)return;if(Math.abs(dx)>Math.abs(dy))move2048(dx>0?"right":"left");else move2048(dy>0?"down":"up")},{passive:false})}
-function add2048Tile(){const empty=[];for(let y=0;y<4;y++)for(let x=0;x<4;x++)if(board2048[y][x]===0)empty.push({x,y});if(!empty.length)return;const p=empty[Math.floor(Math.random()*empty.length)];board2048[p.y][p.x]=Math.random()<.9?2:4}
-function draw2048(){const board=document.getElementById("board2048");if(!board)return;board.innerHTML="";for(let y=0;y<4;y++)for(let x=0;x<4;x++){const value=board2048[y][x];const tile=document.createElement("div");tile.className="tile";if(value){tile.dataset.value=value;tile.textContent=value}board.appendChild(tile)}setScore(score)}
-function slide2048(row){const arr=row.filter(v=>v!==0);const result=[];for(let i=0;i<arr.length;i++){if(i<arr.length-1&&arr[i]===arr[i+1]){const merged=arr[i]*2;result.push(merged);score+=merged;i++}else result.push(arr[i])}while(result.length<4)result.push(0);return result}
-function move2048(direction){let changed=false;const before=JSON.stringify(board2048);if(direction==="left"||direction==="right"){for(let y=0;y<4;y++){let row=board2048[y].slice();if(direction==="right")row.reverse();row=slide2048(row);if(direction==="right")row.reverse();board2048[y]=row}}else{for(let x=0;x<4;x++){let col=[board2048[0][x],board2048[1][x],board2048[2][x],board2048[3][x]];if(direction==="down")col.reverse();col=slide2048(col);if(direction==="down")col.reverse();for(let y=0;y<4;y++)board2048[y][x]=col[y]}}changed=before!==JSON.stringify(board2048);if(!changed)return;add2048Tile();draw2048();haptic();if(board2048.flat().includes(2048)){gameOver("🎉 2048!",score);return}if(!canMove2048())gameOver("💥 Ходов больше нет",score)}
-function canMove2048(){for(let y=0;y<4;y++)for(let x=0;x<4;x++){if(board2048[y][x]===0)return true;if(x<3&&board2048[y][x]===board2048[y][x+1])return true;if(y<3&&board2048[y][x]===board2048[y+1][x])return true}return false}
+/* ========== QUIZ (Слова) ========== */
+const quizQuestions=[
+  {q:"Столица Украины?",a:["Львов","Киев","Одесса","Харьков"],c:1},
+  {q:"Самая длинная река Украины?",a:["Днепр","Днестр","Южный Буг","Десна"],c:0},
+  {q:"В каком году провозглашена независимость Украины?",a:["1990","1991","1992","1989"],c:1},
+  {q:"Кто написал «Кобзарь»?",a:["Франко","Шевченко","Леся Украинка","Сковорода"],c:1},
+  {q:"Сколько областей в Украине?",a:["24","25","27","22"],c:0},
+  {q:"Самая высокая гора Украины?",a:["Говерла","Петрос","Поп Иван","Бребенескул"],c:0},
+  {q:"Какой город называют «Южной Пальмирой»?",a:["Николаев","Одесса","Херсон","Мариуполь"],c:1},
+  {q:"Символ Украины?",a:["Клён","Калина","Дуб","Верба"],c:1},
+  {q:"В каком море находится Крым?",a:["Чёрное","Азовское","Оба","Каспийское"],c:2},
+  {q:"Первый космонавт Украины (в составе СССР)?",a:["Попович","Гагарин","Леонов","Титов"],c:0},
+  {q:"Сколько цветов на флаге Украины?",a:["2","3","1","4"],c:0},
+  {q:"Какой язык является государственным в Украине?",a:["Русский","Украинский","Оба","Английский"],c:1},
+  {q:"Где находится София Киевская?",a:["Львов","Киев","Чернигов","Полтава"],c:1},
+  {q:"Какая валюта в Украине?",a:["Рубль","Гривна","Евро","Злотый"],c:1},
+  {q:"Самый большой город Украины по населению?",a:["Харьков","Киев","Одесса","Днепр"],c:1},
+  {q:"Сколько планет в Солнечной системе?",a:["7","8","9","10"],c:1},
+  {q:"Самая близкая к Солнцу планета?",a:["Венера","Меркурий","Марс","Земля"],c:1},
+  {q:"Что тяжелее: 1 кг железа или 1 кг ваты?",a:["Железо","Вата","Одинаково","Зависит"],c:2},
+  {q:"Сколько континентов на Земле?",a:["5","6","7","4"],c:2},
+  {q:"Самый большой океан?",a:["Атлантический","Индийский","Тихий","Северный Ледовитый"],c:2},
+  {q:"Кто изобрёл лампочку?",a:["Тесла","Эдисон","Фарадей","Ньютон"],c:1},
+  {q:"Химический символ воды?",a:["O2","H2O","CO2","NaCl"],c:1},
+  {q:"Сколько дней в високосном году?",a:["365","366","364","367"],c:1},
+  {q:"Самая длинная река в мире?",a:["Амазонка","Нил","Янцзы","Миссисипи"],c:1},
+  {q:"Столица Франции?",a:["Марсель","Париж","Лион","Ницца"],c:1},
+  {q:"Кто написал «Война и мир»?",a:["Достоевский","Толстой","Чехов","Пушкин"],c:1},
+  {q:"Сколько хромосом у человека?",a:["42","46","44","48"],c:1},
+  {q:"Самая твёрдая природная вещество?",a:["Золото","Алмаз","Кварц","Сталь"],c:1},
+  {q:"В каком году человек впервые высадился на Луну?",a:["1967","1969","1971","1965"],c:1},
+  {q:"Кто нарисовал «Мону Лизу»?",a:["Микеланджело","Да Винчи","Рафаэль","Ван Гог"],c:1},
+  {q:"Сколько сторон у треугольника?",a:["2","3","4","5"],c:1},
+  {q:"Какой газ мы выдыхаем?",a:["Кислород","Углекислый газ","Азот","Водород"],c:1},
+  {q:"Самая быстрая сухопутная животное?",a:["Лев","Гепард","Антилопа","Лошадь"],c:1},
+  {q:"Столица Японии?",a:["Осака","Токио","Киото","Нагоя"],c:1},
+  {q:"Сколько часов в сутках?",a:["12","24","36","48"],c:1},
+  {q:"Что такое HTML?",a:["Язык программирования","Язык разметки","База данных","Операционная система"],c:1},
+  {q:"Основатель Microsoft?",a:["Стив Джобс","Билл Гейтс","Марк Цукерберг","Илон Маск"],c:1},
+  {q:"Сколько зубов у взрослого человека обычно?",a:["28","32","30","36"],c:1},
+  {q:"Самая маленькая планета Солнечной системы?",a:["Марс","Меркурий","Плутон","Венера"],c:1},
+  {q:"Кто открыл Америку?",a:["Магеллан","Колумб","Кук","Васко да Гама"],c:1},
+  {q:"Столица Италии?",a:["Милан","Рим","Неаполь","Флоренция"],c:1},
+  {q:"Сколько букв в украинском алфавите?",a:["31","33","32","30"],c:1},
+  {q:"Какой орган отвечает за мышление?",a:["Сердце","Мозг","Печень","Лёгкие"],c:1},
+  {q:"Самый большой материк?",a:["Африка","Евразия","Америка","Австралия"],c:1},
+  {q:"В каком городе находится Эйфелева башня?",a:["Лондон","Париж","Берлин","Рим"],c:1},
+  {q:"Сколько минут в часе?",a:["30","60","100","90"],c:1},
+  {q:"Какой цвет получается при смешивании синего и жёлтого?",a:["Красный","Зелёный","Фиолетовый","Оранжевый"],c:1},
+  {q:"Кто написал «Гамлета»?",a:["Диккенс","Шекспир","Байрон","Толстой"],c:1},
+  {q:"Самая высокая гора в мире?",a:["Килиманджаро","Эверест","Эльбрус","Монблан"],c:1},
+  {q:"Сколько игроков в футбольной команде на поле?",a:["10","11","12","9"],c:1},
+  {q:"Что измеряет термометр?",a:["Давление","Температуру","Скорость","Вес"],c:1},
+  {q:"Столица Польши?",a:["Краков","Варшава","Вроцлав","Гданьск"],c:1},
+  {q:"Сколько крыльев у бабочки?",a:["2","4","6","8"],c:1},
+  {q:"Какой металл жидкий при комнатной температуре?",a:["Железо","Ртуть","Свинец","Алюминий"],c:1},
+  {q:"В каком году началась Вторая мировая война?",a:["1938","1939","1940","1941"],c:1},
+  {q:"Самый большой остров в мире?",a:["Мадагаскар","Гренландия","Борнео","Новая Гвинея"],c:1},
+  {q:"Кто изобрёл телефон?",a:["Эдисон","Белл","Тесла","Маркони"],c:1},
+  {q:"Сколько струн у классической гитары?",a:["4","6","7","5"],c:1},
+  {q:"Какой газ необходим для дыхания?",a:["Азот","Кислород","Углекислый","Водород"],c:1},
+  {q:"Столица Германии?",a:["Мюнхен","Берлин","Гамбург","Франкфурт"],c:1},
+  {q:"Сколько ног у паука?",a:["6","8","10","4"],c:1},
+  {q:"Что такое CPU?",a:["Видеокарта","Процессор","Оперативная память","Жёсткий диск"],c:1},
+  {q:"Самая длинная кость в теле человека?",a:["Позвоночник","Бедренная","Берцовая","Плечевая"],c:1},
+  {q:"В каком городе проходит карнавал в Бразилии?",a:["Сан-Паулу","Рио-де-Жанейро","Бразилиа","Салвадор"],c:1},
+  {q:"Сколько градусов в прямом угле?",a:["45","90","180","360"],c:1},
+  {q:"Кто написал «Ромео и Джульетту»?",a:["Гёте","Шекспир","Мольер","Данте"],c:1},
+  {q:"Самый быстрый вид транспорта?",a:["Поезд","Самолёт","Автомобиль","Корабль"],c:1},
+  {q:"Какой элемент обозначается как Fe?",a:["Фтор","Железо","Фосфор","Франций"],c:1},
+  {q:"Сколько планет в Солнечной системе (без карликовых)?",a:["7","8","9","10"],c:1},
+  {q:"Столица Турции?",a:["Стамбул","Анкара","Измир","Анталья"],c:1},
+  {q:"Что такое WWW?",a:["World Wide Web","World Web Wide","Web World Wide","Wide World Web"],c:0},
+  {q:"Сколько колец на олимпийском флаге?",a:["4","5","6","7"],c:1},
+  {q:"Какой город был столицей Древнего Египта?",a:["Александрия","Фивы","Мемфис","Каир"],c:2},
+  {q:"Сколько хромосом у человека?",a:["23","46","44","48"],c:1},
+  {q:"Кто изобрёл книгопечатание?",a:["Галилей","Гутенберг","Коперник","Ньютон"],c:1},
+  {q:"Самая большая пустыня в мире?",a:["Гоби","Сахара","Антарктическая","Калахари"],c:2},
+  {q:"В каком году распался СССР?",a:["1989","1991","1993","1990"],c:1},
+  {q:"Сколько минут в четверти часа?",a:["10","15","20","30"],c:1},
+  {q:"Какой цвет у хлорофилла?",a:["Красный","Зелёный","Синий","Жёлтый"],c:1},
+  {q:"Столица Испании?",a:["Барселона","Мадрид","Валенсия","Севилья"],c:1},
+  {q:"Сколько дней в феврале в обычном году?",a:["28","29","30","31"],c:0}
+];
 
-/* ==================== SNAKE ==================== */
-let snake=[],snakeFood={x:0,y:0},snakeDir={x:1,y:0},snakeNext={x:1,y:0},snakeCanvas,snakeCtx,snakeLast=0;
-function startSnake(){setTitle("🐍 Змейка");setTip("👆 Свайпай по полю");document.getElementById("gameContent").innerHTML=`<canvas id="snakeCanvas" class="game-canvas"></canvas>`;snakeCanvas=document.getElementById("snakeCanvas");const size=Math.min(window.innerWidth-36,390);snakeCanvas.width=size;snakeCanvas.height=Math.floor(size*1.25);snakeCtx=snakeCanvas.getContext("2d");snake=[{x:7,y:10},{x:6,y:10},{x:5,y:10}];snakeDir={x:1,y:0};snakeNext={x:1,y:0};createSnakeFood();setScore(0);snakeLast=performance.now();animation=requestAnimationFrame(snakeLoop);let sx=0,sy=0;snakeCanvas.addEventListener("touchstart",e=>{e.preventDefault();const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY},{passive:false});snakeCanvas.addEventListener("touchend",e=>{e.preventDefault();const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<12&&Math.abs(dy)<12)return;if(Math.abs(dx)>Math.abs(dy))changeSnake(dx>0?1:-1,0);else changeSnake(0,dy>0?1:-1)},{passive:false})}
-function changeSnake(x,y){if(x===-snakeDir.x&&y===-snakeDir.y)return;snakeNext={x,y};haptic()}
-function createSnakeFood(){do{snakeFood={x:Math.floor(Math.random()*16),y:Math.floor(Math.random()*20)}}while(snake.some(p=>p.x===snakeFood.x&&p.y===snakeFood.y))}
-function snakeLoop(time){if(currentGame!=="snake")return;if(time-snakeLast>120){snakeLast=time;snakeDir={...snakeNext};const head=snake[0];const next={x:head.x+snakeDir.x,y:head.y+snakeDir.y};if(next.x<0||next.x>=16||next.y<0||next.y>=20||snake.some(p=>p.x===next.x&&p.y===next.y)){gameOver("🐍 Игра окончена",score);return}snake.unshift(next);if(next.x===snakeFood.x&&next.y===snakeFood.y){score+=10;setScore(score);createSnakeFood();haptic("medium")}else snake.pop()}drawSnake();animation=requestAnimationFrame(snakeLoop)}
-function drawSnake(){const cw=snakeCanvas.width/16,ch=snakeCanvas.height/20;snakeCtx.fillStyle="#0a0e1a";snakeCtx.fillRect(0,0,snakeCanvas.width,snakeCanvas.height);snakeCtx.font=`${Math.floor(ch*.9)}px serif`;snakeCtx.textAlign="center";snakeCtx.textBaseline="middle";snakeCtx.fillText("🍎",snakeFood.x*cw+cw/2,snakeFood.y*ch+ch/2);snake.forEach((p,i)=>{snakeCtx.fillStyle=i===0?"#4ade80":"#22c55e";snakeCtx.beginPath();snakeCtx.roundRect(p.x*cw+2,p.y*ch+2,cw-4,ch-4,7);snakeCtx.fill()})}
+let quizUsed=[];
+function startWords(){
+  setTitle("🔤 Викторина");
+  setTip("Выбери правильный ответ");
+  quizUsed=[];
+  score=0;
+  setScore(0);
+  nextQuiz();
+}
+function nextQuiz(){
+  if(quizUsed.length>=quizQuestions.length){
+    gameOver("🏆 Вопросы закончились!",score);
+    return;
+  }
+  let idx;
+  do{idx=Math.floor(Math.random()*quizQuestions.length)}while(quizUsed.includes(idx));
+  quizUsed.push(idx);
+  const item=quizQuestions[idx];
+  document.getElementById("gameContent").innerHTML=`
+    <div class="quiz-question">${item.q}</div>
+    <div class="quiz-options">
+      ${item.a.map((ans,i)=>`<button onclick="answerQuiz(${i},${item.c})">${ans}</button>`).join("")}
+    </div>`;
+}
+function answerQuiz(selected,correct){
+  if(selected===correct){
+    score+=100;
+    setScore(score);
+    haptic();
+    nextQuiz();
+  }else{
+    gameOver("❌ Неверный ответ",score);
+  }
+}
 
-/* ==================== TETRIS ==================== */
-let tetBoard,tetPiece,tetCanvas,tetCtx;
-const tetPieces=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
-function startTetris(){setTitle("🧱 Тетрис");setTip("👈 👉 движение • 👆 поворот • ⬇️ сброс");document.getElementById("gameContent").innerHTML=`<canvas id="tetCanvas" class="game-canvas"></canvas><div class="bottom-buttons"><button onclick="tetMove(-1)">⬅️</button><button onclick="tetRotate()">🔄</button><button onclick="tetMove(1)">➡️</button><button onclick="tetDrop()">⏬</button></div>`;tetCanvas=document.getElementById("tetCanvas");const w=Math.min(window.innerWidth-36,390);tetCanvas.width=w;tetCanvas.height=Math.floor(w*1.7);tetCtx=tetCanvas.getContext("2d");tetBoard=Array.from({length:20},()=>Array(10).fill(0));score=0;setScore(0);tetSpawn();tetLoop()}
-function tetSpawn(){const shape=tetPieces[Math.floor(Math.random()*tetPieces.length)].map(r=>r.slice());tetPiece={shape,x:Math.floor((10-shape[0].length)/2),y:0};if(!tetValid(0,0,shape))gameOver("🧱 Тетрис окончен",score)}
-function tetValid(dx,dy,shape=tetPiece.shape){for(let y=0;y<shape.length;y++)for(let x=0;x<shape[y].length;x++){if(!shape[y][x])continue;const nx=tetPiece.x+x+dx,ny=tetPiece.y+y+dy;if(nx<0||nx>=10||ny>=20)return false;if(ny>=0&&tetBoard[ny][nx])return false}return true}
-function tetMove(dx){if(tetValid(dx,0)){tetPiece.x+=dx;tetDraw()}}
-function tetRotate(){const s=tetPiece.shape;const rotated=Array.from({length:s[0].length},()=>Array(s.length).fill(0));for(let y=0;y<s.length;y++)for(let x=0;x<s[y].length;x++)rotated[x][s.length-1-y]=s[y][x];if(tetValid(0,0,rotated)){tetPiece.shape=rotated;tetDraw();haptic()}}
-function tetDrop(){while(tetValid(0,1)){tetPiece.y++;score+=2}setScore(score);tetLock()}
-function tetLock(){tetPiece.shape.forEach((row,y)=>row.forEach((v,x)=>{if(v)tetBoard[tetPiece.y+y][tetPiece.x+x]=1}));tetLines();tetSpawn();tetDraw()}
-function tetLines(){let lines=0;tetBoard=tetBoard.filter(row=>{if(row.every(Boolean)){lines++;return false}return true});while(tetBoard.length<20)tetBoard.unshift(Array(10).fill(0));if(lines){score+=[0,100,300,600,1000][lines];setScore(score);haptic("medium")}}
-function tetLoop(){if(currentGame!=="tetris")return;gameTimer=setTimeout(()=>{if(tetValid(0,1))tetPiece.y++;else tetLock();tetDraw();tetLoop()},Math.max(110,650-score/10))}
-function tetDraw(){if(!tetCtx)return;const cw=tetCanvas.width/10,ch=tetCanvas.height/20;tetCtx.fillStyle="#0a0e1a";tetCtx.fillRect(0,0,tetCanvas.width,tetCanvas.height);tetCtx.fillStyle="#4f46e5";tetBoard.forEach((row,y)=>row.forEach((v,x)=>{if(v)tetCtx.fillRect(x*cw+2,y*ch+2,cw-4,ch-4)}));tetCtx.fillStyle="#a78bfa";tetPiece.shape.forEach((row,y)=>row.forEach((v,x)=>{if(v)tetCtx.fillRect((tetPiece.x+x)*cw+2,(tetPiece.y+y)*ch+2,cw-4,ch-4)}))}
+/* ========== Остальные игры (кратко, рабочие) ========== */
+/* 2048 */
+let board2048=[],t2048x=0,t2048y=0;
+function start2048(){setTitle("🔢 2048");setTip("Свайпай");document.getElementById("gameContent").innerHTML=`<div id="b2048" class="board2048"></div>`;board2048=Array.from({length:4},()=>Array(4).fill(0));addTile();addTile();draw2048();const b=document.getElementById("b2048");b.ontouchstart=e=>{e.preventDefault();t2048x=e.changedTouches[0].clientX;t2048y=e.changedTouches[0].clientY};b.ontouchend=e=>{e.preventDefault();const dx=e.changedTouches[0].clientX-t2048x,dy=e.changedTouches[0].clientY-t2048y;if(Math.abs(dx)<12&&Math.abs(dy)<12)return;move2048(Math.abs(dx)>Math.abs(dy)?(dx>0?"r":"l"):(dy>0?"d":"u"))}}
+function addTile(){const e=[];for(let y=0;y<4;y++)for(let x=0;x<4;x++)if(!board2048[y][x])e.push({x,y});if(!e.length)return;const p=e[Math.floor(Math.random()*e.length)];board2048[p.y][p.x]=Math.random()<.9?2:4}
+function draw2048(){const b=document.getElementById("b2048");if(!b)return;b.innerHTML="";for(let y=0;y<4;y++)for(let x=0;x<4;x++){const v=board2048[y][x];const d=document.createElement("div");d.className="tile";if(v){d.dataset.value=v;d.textContent=v}b.appendChild(d)}setScore(score)}
+function slide(row){const a=row.filter(v=>v);const r=[];for(let i=0;i<a.length;i++){if(i<a.length-1&&a[i]===a[i+1]){r.push(a[i]*2);score+=a[i]*2;i++}else r.push(a[i])}while(r.length<4)r.push(0);return r}
+function move2048(dir){const before=JSON.stringify(board2048);if(dir==="l"||dir==="r"){for(let y=0;y<4;y++){let row=board2048[y].slice();if(dir==="r")row.reverse();row=slide(row);if(dir==="r")row.reverse();board2048[y]=row}}else{for(let x=0;x<4;x++){let col=[board2048[0][x],board2048[1][x],board2048[2][x],board2048[3][x]];if(dir==="d")col.reverse();col=slide(col);if(dir==="d")col.reverse();for(let y=0;y<4;y++)board2048[y][x]=col[y]}}if(before===JSON.stringify(board2048))return;addTile();draw2048();haptic();if(board2048.flat().includes(2048))gameOver("🎉 2048!",score);else if(!canMove())gameOver("Ходов нет",score)}
+function canMove(){for(let y=0;y<4;y++)for(let x=0;x<4;x++){if(!board2048[y][x])return true;if(x<3&&board2048[y][x]===board2048[y][x+1])return true;if(y<3&&board2048[y][x]===board2048[y+1][x])return true}return false}
 
-/* ==================== MEMORY ==================== */
-let memoryFirst=null,memoryLock=false,memoryDone=0;
-function startMemory(){setTitle("🧠 Память");setTip("Найди одинаковые пары");const symbols=["🍎","🚀","🐶","⚽","🍕","🎸","🌟","🔥"];let cards=[...symbols,...symbols].sort(()=>Math.random()-.5);memoryFirst=null;memoryLock=false;memoryDone=0;document.getElementById("gameContent").innerHTML=`<div id="memoryGrid" class="memory-grid"></div>`;const grid=document.getElementById("memoryGrid");cards.forEach(symbol=>{const b=document.createElement("button");b.className="memory-card";b.textContent=symbol;b.onclick=()=>{if(memoryLock||b.classList.contains("done"))return;b.classList.add("open");if(!memoryFirst){memoryFirst={el:b,symbol};return}if(memoryFirst.symbol===symbol){b.classList.add("done");memoryFirst.el.classList.add("done");memoryDone++;memoryFirst=null;setScore(memoryDone*100);haptic();if(memoryDone===8)gameOver("🧠 Отличная память!",memoryDone*100)}else{memoryLock=true;const old=memoryFirst.el;memoryFirst=null;setTimeout(()=>{b.classList.remove("open");old.classList.remove("open");memoryLock=false},600)}};grid.appendChild(b)})}
+/* Snake */
+let snake,snakeFood,snakeDir,snakeNext,snakeC,snakeCtx,snakeLast;
+function startSnake(){setTitle("🐍 Змейка");setTip("Свайпай");document.getElementById("gameContent").innerHTML=`<canvas id="sc" class="game-canvas"></canvas>`;snakeC=document.getElementById("sc");const s=Math.min(innerWidth-36,380);snakeC.width=s;snakeC.height=s*1.2;snakeCtx=snakeC.getContext("2d");snake=[{x:6,y:8},{x:5,y:8},{x:4,y:8}];snakeDir={x:1,y:0};snakeNext={x:1,y:0};createFood();snakeLast=performance.now();animation=requestAnimationFrame(snakeLoop);let sx,sy;snakeC.ontouchstart=e=>{e.preventDefault();sx=e.changedTouches[0].clientX;sy=e.changedTouches[0].clientY};snakeC.ontouchend=e=>{e.preventDefault();const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(Math.abs(dx)>Math.abs(dy)){if(dx>0&&snakeDir.x!==-1)snakeNext={x:1,y:0};if(dx<0&&snakeDir.x!==1)snakeNext={x:-1,y:0}}else{if(dy>0&&snakeDir.y!==-1)snakeNext={x:0,y:1};if(dy<0&&snakeDir.y!==1)snakeNext={x:0,y:-1}}}}
+function createFood(){do{snakeFood={x:Math.floor(Math.random()*14),y:Math.floor(Math.random()*16)}}while(snake.some(p=>p.x===snakeFood.x&&p.y===snakeFood.y))}
+function snakeLoop(t){if(currentGame!=="snake")return;if(t-snakeLast>130){snakeLast=t;snakeDir={...snakeNext};const h=snake[0];const n={x:h.x+snakeDir.x,y:h.y+snakeDir.y};if(n.x<0||n.x>=14||n.y<0||n.y>=16||snake.some(p=>p.x===n.x&&p.y===n.y)){gameOver("Игра окончена",score);return}snake.unshift(n);if(n.x===snakeFood.x&&n.y===snakeFood.y){score+=10;setScore(score);createFood();haptic("medium")}else snake.pop()}const cw=snakeC.width/14,ch=snakeC.height/16;snakeCtx.fillStyle="#0b1120";snakeCtx.fillRect(0,0,snakeC.width,snakeC.height);snakeCtx.fillStyle="#22c55e";snake.forEach((p,i)=>{snakeCtx.beginPath();snakeCtx.roundRect(p.x*cw+2,p.y*ch+2,cw-4,ch-4,6);snakeCtx.fill()});snakeCtx.fillStyle="#ef4444";snakeCtx.beginPath();snakeCtx.arc(snakeFood.x*cw+cw/2,snakeFood.y*ch+ch/2,cw*0.35,0,Math.PI*2);snakeCtx.fill();animation=requestAnimationFrame(snakeLoop)}
 
-/* ==================== MINES ==================== */
-function startMines(){setTitle("💣 Сапёр");setTip("Открой безопасные клетки");const size=8,mines=10;const cells=Array(size*size).fill(false);for(let i=0;i<mines;i++){let p;do{p=Math.floor(Math.random()*cells.length)}while(cells[p]);cells[p]=true}document.getElementById("gameContent").innerHTML=`<div id="mines" class="mines"></div>`;const grid=document.getElementById("mines");let opened=0;cells.forEach((mine,index)=>{const b=document.createElement("button");b.className="mine-cell";b.onclick=()=>{if(b.classList.contains("open"))return;b.classList.add("open");if(mine){b.textContent="💣";gameOver("💥 Бум!",opened);return}opened++;const x=index%size,y=Math.floor(index/size);let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx>=0&&nx<size&&ny>=0&&ny<size&&cells[ny*size+nx])n++}b.textContent=n||"";setScore(opened);haptic();if(opened===size*size-mines)gameOver("🏆 Поле очищено!",opened)};grid.appendChild(b)})}
+/* Space - улучшенный корабль */
+function startSpace(){setTitle("🚀 Космос");setTip("Двигай и стреляй");document.getElementById("gameContent").innerHTML=`<canvas id="sp" class="game-canvas"></canvas>`;const c=document.getElementById("sp"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.45;let player={x:c.width/2,y:c.height-55},bullets=[],enemies=[],frame=0;c.ontouchmove=e=>{e.preventDefault();player.x=e.touches[0].clientX-c.getBoundingClientRect().left};c.ontouchstart=e=>{e.preventDefault();bullets.push({x:player.x,y:player.y-20,v:-9})};function draw(){if(currentGame!=="space")return;ctx.fillStyle="#050814";ctx.fillRect(0,0,c.width,c.height);if(frame%40===0)enemies.push({x:30+Math.random()*(c.width-60),y:-20,v:2+Math.random()*2.5,r:12+Math.random()*8});bullets.forEach(b=>{b.y+=b.v;ctx.fillStyle="#22d3ee";ctx.fillRect(b.x-2,b.y,4,14)});enemies.forEach(e=>{e.y+=e.v;ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.moveTo(e.x,e.y-e.r);ctx.lineTo(e.x+e.r,e.y+e.r*0.6);ctx.lineTo(e.x-e.r,e.y+e.r*0.6);ctx.closePath();ctx.fill();bullets.forEach(b=>{if(Math.hypot(b.x-e.x,b.y-e.y)<e.r+6){e.y=9999;b.y=-999;score+=15;setScore(score);haptic()}});if(Math.hypot(e.x-player.x,e.y-player.y)<28)gameOver("Корабль уничтожен",score)});bullets=bullets.filter(b=>b.y>-20);enemies=enemies.filter(e=>e.y<c.height+30);// корабль
+  ctx.fillStyle="#6366f1";ctx.beginPath();ctx.moveTo(player.x,player.y-22);ctx.lineTo(player.x-16,player.y+16);ctx.lineTo(player.x+16,player.y+16);ctx.closePath();ctx.fill();ctx.fillStyle="#a5b4fc";ctx.fillRect(player.x-3,player.y-8,6,12);frame++;animation=requestAnimationFrame(draw)}draw()}
 
-/* ==================== PONG ==================== */
-function startPong(){setTitle("🏓 Pong");setTip("Двигай ракетку пальцем");document.getElementById("gameContent").innerHTML=`<canvas id="pong" class="game-canvas"></canvas>`;const c=document.getElementById("pong"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.35);let paddle=c.width/2,ball={x:c.width/2,y:c.height/2,vx:3,vy:4},points=0;function draw(){if(currentGame!=="pong")return;ctx.fillStyle="#080c18";ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#6366f1";ctx.roundRect(paddle-50,c.height-35,100,14,8);ctx.fill();ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x<8||ball.x>c.width-8)ball.vx*=-1;if(ball.y<8)ball.vy*=-1;if(ball.y>c.height-50&&ball.x>paddle-55&&ball.x<paddle+55){ball.vy=-Math.abs(ball.vy);points++;setScore(points);haptic()}if(ball.y>c.height+20){gameOver("🏓 Промах!",points);return}animation=requestAnimationFrame(draw)}c.addEventListener("touchmove",e=>{e.preventDefault();const rect=c.getBoundingClientRect();paddle=e.touches[0].clientX-rect.left;paddle=Math.max(55,Math.min(c.width-55,paddle))},{passive:false});draw()}
+/* Остальные игры (рабочие версии) */
+function startTetris(){setTitle("🧱 Тетрис");setTip("Кнопки внизу");document.getElementById("gameContent").innerHTML=`<canvas id="tc" class="game-canvas"></canvas><div class="bottom-buttons"><button onclick="tetMove(-1)">⬅️</button><button onclick="tetRot()">🔄</button><button onclick="tetMove(1)">➡️</button><button onclick="tetDrop()">⏬</button></div>`;const c=document.getElementById("tc");c.width=Math.min(innerWidth-36,300);c.height=c.width*1.8;window.tetCtx=c.getContext("2d");window.tetBoard=Array.from({length:20},()=>Array(10).fill(0));window.tetPiece=null;window.tetShapes=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];tetSpawn();tetLoop()}
+function tetSpawn(){const s=window.tetShapes[Math.floor(Math.random()*7)].map(r=>[...r]);window.tetPiece={s,x:3,y:0};if(!tetValid(0,0))gameOver("Тетрис окончен",score)}
+function tetValid(dx,dy,sh=window.tetPiece.s){for(let y=0;y<sh.length;y++)for(let x=0;x<sh[y].length;x++){if(!sh[y][x])continue;const nx=window.tetPiece.x+x+dx,ny=window.tetPiece.y+y+dy;if(nx<0||nx>=10||ny>=20||(ny>=0&&window.tetBoard[ny][nx]))return false}return true}
+function tetMove(d){if(tetValid(d,0)){window.tetPiece.x+=d;tetDraw()}}
+function tetRot(){const s=window.tetPiece.s;const r=Array.from({length:s[0].length},()=>Array(s.length).fill(0));for(let y=0;y<s.length;y++)for(let x=0;x<s[y].length;x++)r[x][s.length-1-y]=s[y][x];if(tetValid(0,0,r)){window.tetPiece.s=r;tetDraw()}}
+function tetDrop(){while(tetValid(0,1)){window.tetPiece.y++;score+=2}setScore(score);tetLock()}
+function tetLock(){window.tetPiece.s.forEach((row,y)=>row.forEach((v,x)=>{if(v)window.tetBoard[window.tetPiece.y+y][window.tetPiece.x+x]=1}));let lines=0;window.tetBoard=window.tetBoard.filter(r=>{if(r.every(Boolean)){lines++;return false}return true});while(window.tetBoard.length<20)window.tetBoard.unshift(Array(10).fill(0));if(lines){score+=[0,100,300,500,800][lines];setScore(score)}tetSpawn();tetDraw()}
+function tetLoop(){if(currentGame!=="tetris")return;gameTimer=setTimeout(()=>{if(tetValid(0,1))window.tetPiece.y++;else tetLock();tetDraw();tetLoop()},Math.max(120,600-score/8))}
+function tetDraw(){const ctx=window.tetCtx,cw=ctx.canvas.width/10,ch=ctx.canvas.height/20;ctx.fillStyle="#0b1120";ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.fillStyle="#4f46e5";window.tetBoard.forEach((r,y)=>r.forEach((v,x)=>{if(v)ctx.fillRect(x*cw+1,y*ch+1,cw-2,ch-2)}));ctx.fillStyle="#a78bfa";window.tetPiece.s.forEach((r,y)=>r.forEach((v,x)=>{if(v)ctx.fillRect((window.tetPiece.x+x)*cw+1,(window.tetPiece.y+y)*ch+1,cw-2,ch-2)}))}
 
-/* ==================== BREAKOUT ==================== */
-function startBreakout(){setTitle("🧱 Breakout");setTip("Двигай платформу пальцем");document.getElementById("gameContent").innerHTML=`<canvas id="breakout" class="game-canvas"></canvas>`;const c=document.getElementById("breakout"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.4);let paddle=c.width/2,ball={x:c.width/2,y:c.height-70,vx:3,vy:-4};const bricks=[];for(let y=0;y<5;y++)for(let x=0;x<6;x++)bricks.push({x:x*(c.width/6)+4,y:40+y*28,w:c.width/6-8,h:20,alive:true});function draw(){if(currentGame!=="breakout")return;ctx.fillStyle="#080c18";ctx.fillRect(0,0,c.width,c.height);bricks.forEach((b,i)=>{if(!b.alive)return;ctx.fillStyle=i%3===0?"#4f46e5":i%3===1?"#8b5cf6":"#22d3ee";ctx.fillRect(b.x,b.y,b.w,b.h)});ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(ball.x,ball.y,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#6366f1";ctx.fillRect(paddle-45,c.height-30,90,13);ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x<7||ball.x>c.width-7)ball.vx*=-1;if(ball.y<7)ball.vy*=-1;if(ball.y>c.height-50&&ball.x>paddle-50&&ball.x<paddle+50)ball.vy=-Math.abs(ball.vy);bricks.forEach(b=>{if(!b.alive)return;if(ball.x>b.x&&ball.x<b.x+b.w&&ball.y>b.y&&ball.y<b.y+b.h){b.alive=false;ball.vy*=-1;score+=10;setScore(score);haptic()}});if(!bricks.some(b=>b.alive)){gameOver("🏆 Поле разбито!",score);return}if(ball.y>c.height+20){gameOver("💥 Мяч потерян",score);return}animation=requestAnimationFrame(draw)}c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();paddle=e.touches[0].clientX-r.left;paddle=Math.max(45,Math.min(c.width-45,paddle))},{passive:false});draw()}
+function startMemory(){setTitle("🧠 Память");setTip("Найди пары");const sym=["🍎","🚀","🐶","⚽","🍕","🎸","🌟","🔥"];let cards=[...sym,...sym].sort(()=>Math.random()-.5);let first=null,lock=false,done=0;document.getElementById("gameContent").innerHTML=`<div class="memory-grid" id="mg"></div>`;const g=document.getElementById("mg");cards.forEach(s=>{const b=document.createElement("button");b.className="memory-card";b.textContent=s;b.onclick=()=>{if(lock||b.classList.contains("done"))return;b.classList.add("open");if(!first){first={el:b,s};return}if(first.s===s){b.classList.add("done");first.el.classList.add("done");done++;first=null;setScore(done*100);if(done===8)gameOver("Отлично!",done*100)}else{lock=true;const o=first.el;first=null;setTimeout(()=>{b.classList.remove("open");o.classList.remove("open");lock=false},500)}};g.appendChild(b)})}
 
-/* ==================== FLAPPY ==================== */
-function startFlappy(){setTitle("🐦 Flappy");setTip("Тапай, чтобы лететь");document.getElementById("gameContent").innerHTML=`<canvas id="flappy" class="game-canvas"></canvas>`;const c=document.getElementById("flappy"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.5);let bird={x:80,y:c.height/2,vy:0},pipes=[],passed=0,frame=0;function flap(){bird.vy=-7;haptic()}c.addEventListener("touchstart",e=>{e.preventDefault();flap()},{passive:false});function draw(){if(currentGame!=="flappy")return;ctx.fillStyle="#0f172a";ctx.fillRect(0,0,c.width,c.height);bird.vy+=.35;bird.y+=bird.vy;if(frame%100===0){const gap=145;const top=50+Math.random()*(c.height-gap-100);pipes.push({x:c.width,top,gap,passed:false})}pipes.forEach(p=>{p.x-=3;ctx.fillStyle="#22c55e";ctx.fillRect(p.x,0,55,p.top);ctx.fillRect(p.x,p.top+p.gap,55,c.height);if(!p.passed&&p.x+55<bird.x){p.passed=true;passed++;score=passed;setScore(score)}if(bird.x+14>p.x&&bird.x-14<p.x+55&&(bird.y-14<p.top||bird.y+14>p.top+p.gap))gameOver("🐦 Столкновение",score)});pipes=pipes.filter(p=>p.x>-70);ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(bird.x,bird.y,15,0,Math.PI*2);ctx.fill();frame++;if(bird.y<0||bird.y>c.height){gameOver("🐦 Игра окончена",score);return}animation=requestAnimationFrame(draw)}draw()}
+function startMines(){setTitle("💣 Сапёр");setTip("Открывай клетки");const size=8,mines=10,cells=Array(size*size).fill(false);for(let i=0;i<mines;i++){let p;do p=Math.floor(Math.random()*cells.length);while(cells[p]);cells[p]=true}document.getElementById("gameContent").innerHTML=`<div class="mines" id="ms"></div>`;const g=document.getElementById("ms");let opened=0;cells.forEach((m,i)=>{const b=document.createElement("button");b.className="mine-cell";b.onclick=()=>{if(b.classList.contains("open"))return;b.classList.add("open");if(m){b.textContent="💣";gameOver("Бум!",opened);return}opened++;const x=i%size,y=Math.floor(i/size);let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx>=0&&nx<size&&ny>=0&&ny<size&&cells[ny*size+nx])n++}b.textContent=n||"";setScore(opened);if(opened===size*size-mines)gameOver("Победа!",opened)};g.appendChild(b)})}
 
-/* ==================== SPACE ==================== */
-function startSpace(){setTitle("🚀 Космос");setTip("Уничтожай астероиды");document.getElementById("gameContent").innerHTML=`<canvas id="space" class="game-canvas"></canvas>`;const c=document.getElementById("space"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.5);let player={x:c.width/2,y:c.height-60},bullets=[],enemies=[],frame=0;c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();player.x=e.touches[0].clientX-r.left},{passive:false});c.addEventListener("touchstart",e=>{e.preventDefault();bullets.push({x:player.x,y:player.y,v:-8})},{passive:false});function draw(){if(currentGame!=="space")return;ctx.fillStyle="#050814";ctx.fillRect(0,0,c.width,c.height);if(frame%45===0)enemies.push({x:Math.random()*c.width,y:-20,v:2+Math.random()*2});bullets.forEach(b=>{b.y+=b.v;ctx.fillStyle="#22d3ee";ctx.fillRect(b.x-2,b.y,4,15)});enemies.forEach(e=>{e.y+=e.v;ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(e.x,e.y,15,0,Math.PI*2);ctx.fill();bullets.forEach(b=>{if(Math.abs(b.x-e.x)<18&&Math.abs(b.y-e.y)<18){e.y=9999;b.y=-999;score+=10;setScore(score);haptic()}});if(Math.abs(e.x-player.x)<22&&Math.abs(e.y-player.y)<25)gameOver("🚀 Корабль уничтожен",score)});bullets=bullets.filter(b=>b.y>-30);enemies=enemies.filter(e=>e.y<c.height+40);ctx.fillStyle="#6366f1";ctx.beginPath();ctx.moveTo(player.x,player.y-20);ctx.lineTo(player.x-18,player.y+18);ctx.lineTo(player.x+18,player.y+18);ctx.closePath();ctx.fill();frame++;animation=requestAnimationFrame(draw)}draw()}
+function startPong(){setTitle("🏓 Pong");setTip("Двигай ракетку");document.getElementById("gameContent").innerHTML=`<canvas id="pg" class="game-canvas"></canvas>`;const c=document.getElementById("pg"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.3;let paddle=c.width/2,ball={x:c.width/2,y:c.height/2,vx:3.2,vy:3.8},pts=0;function draw(){if(currentGame!=="pong")return;ctx.fillStyle="#0b1120";ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#6366f1";ctx.fillRect(paddle-48,c.height-28,96,12);ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x<8||ball.x>c.width-8)ball.vx*=-1;if(ball.y<8)ball.vy*=-1;if(ball.y>c.height-40&&ball.x>paddle-50&&ball.x<paddle+50){ball.vy=-Math.abs(ball.vy);pts++;setScore(pts);haptic()}if(ball.y>c.height+20){gameOver("Промах!",pts);return}animation=requestAnimationFrame(draw)}c.ontouchmove=e=>{e.preventDefault();paddle=e.touches[0].clientX-c.getBoundingClientRect().left;paddle=Math.max(50,Math.min(c.width-50,paddle))};draw()}
 
-/* ==================== RUNNER ==================== */
-function startRunner(){setTitle("🏃 Runner");setTip("Тап — прыжок");document.getElementById("gameContent").innerHTML=`<canvas id="runner" class="game-canvas"></canvas>`;const c=document.getElementById("runner"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.4);let player={x:70,y:c.height-80,vy:0,grounded:true},obstacles=[],frame=0;function jump(){if(player.grounded){player.vy=-10;player.grounded=false;haptic()}}c.addEventListener("touchstart",e=>{e.preventDefault();jump()},{passive:false});function draw(){if(currentGame!=="runner")return;ctx.fillStyle="#0a1020";ctx.fillRect(0,0,c.width,c.height);player.vy+=.5;player.y+=player.vy;if(player.y>=c.height-80){player.y=c.height-80;player.vy=0;player.grounded=true}if(frame%80===0)obstacles.push({x:c.width,y:c.height-75,w:25,h:40});obstacles.forEach(o=>{o.x-=5;ctx.fillStyle="#ff526f";ctx.fillRect(o.x,o.y,o.w,o.h);if(player.x+15>o.x&&player.x-15<o.x+o.w&&player.y+20>o.y){gameOver("💥 Препятствие!",score);return}});obstacles=obstacles.filter(o=>o.x>-50);if(frame%10===0){score++;setScore(score)}ctx.fillStyle="#5e7bff";ctx.beginPath();ctx.arc(player.x,player.y,18,0,Math.PI*2);ctx.fill();ctx.fillStyle="#2ed7c8";ctx.fillRect(0,c.height-55,c.width,4);frame++;animation=requestAnimationFrame(draw)}draw()}
+function startBreakout(){setTitle("🧱 Breakout");setTip("Двигай платформу");document.getElementById("gameContent").innerHTML=`<canvas id="br" class="game-canvas"></canvas>`;const c=document.getElementById("br"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.35;let paddle=c.width/2,ball={x:c.width/2,y:c.height-60,vx:3,vy:-4};const bricks=[];for(let y=0;y<5;y++)for(let x=0;x<6;x++)bricks.push({x:x*(c.width/6)+4,y:30+y*26,w:c.width/6-8,h:18,alive:true});function draw(){if(currentGame!=="breakout")return;ctx.fillStyle="#0b1120";ctx.fillRect(0,0,c.width,c.height);bricks.forEach((b,i)=>{if(!b.alive)return;ctx.fillStyle=["#4f46e5","#8b5cf6","#22d3ee"][i%3];ctx.fillRect(b.x,b.y,b.w,b.h)});ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(ball.x,ball.y,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#6366f1";ctx.fillRect(paddle-42,c.height-26,84,11);ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x<7||ball.x>c.width-7)ball.vx*=-1;if(ball.y<7)ball.vy*=-1;if(ball.y>c.height-40&&ball.x>paddle-45&&ball.x<paddle+45)ball.vy=-Math.abs(ball.vy);bricks.forEach(b=>{if(b.alive&&ball.x>b.x&&ball.x<b.x+b.w&&ball.y>b.y&&ball.y<b.y+b.h){b.alive=false;ball.vy*=-1;score+=10;setScore(score);haptic()}});if(!bricks.some(b=>b.alive)){gameOver("Победа!",score);return}if(ball.y>c.height+15){gameOver("Мяч потерян",score);return}animation=requestAnimationFrame(draw)}c.ontouchmove=e=>{e.preventDefault();paddle=e.touches[0].clientX-c.getBoundingClientRect().left};draw()}
 
-/* ==================== REACTION ==================== */
-function startReaction(){setTitle("⚡ Реакция");setTip("Жди зелёный экран");const content=document.getElementById("gameContent");content.innerHTML=`<div id="reactionBox" style="min-height:420px;border-radius:30px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:950;background:#292f40">ЖДИ...</div>`;const box=document.getElementById("reactionBox");let start=0,ready=false;const delay=1500+Math.random()*3000;gameTimer=setTimeout(()=>{ready=true;start=performance.now();box.textContent="🔥 ТЕПЕРЬ!";box.style.background="linear-gradient(135deg,#25c76f,#18a85b)";haptic("medium")},delay);box.onclick=()=>{if(!ready){clearGameTimers();box.textContent="❌ Слишком рано";setTimeout(()=>startReaction(),800);return}const ms=Math.round(performance.now()-start);setScore(ms);saveRecord("reaction",ms);box.textContent=ms+" мс ⚡";if(ms<300)gameOver("⚡ Молниеносная реакция!",1000-ms);else gameOver("⚡ Результат",Math.max(1,1000-ms))}}
+function startFlappy(){setTitle("🐦 Flappy");setTip("Тапай");document.getElementById("gameContent").innerHTML=`<canvas id="fl" class="game-canvas"></canvas>`;const c=document.getElementById("fl"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.45;let bird={x:70,y:c.height/2,vy:0},pipes=[],frame=0,passed=0;c.ontouchstart=e=>{e.preventDefault();bird.vy=-6.5;haptic()};function draw(){if(currentGame!=="flappy")return;ctx.fillStyle="#0f172a";ctx.fillRect(0,0,c.width,c.height);bird.vy+=0.32;bird.y+=bird.vy;if(frame%95===0){const gap=140,top=40+Math.random()*(c.height-gap-80);pipes.push({x:c.width,top,gap,passed:false})}pipes.forEach(p=>{p.x-=3.2;ctx.fillStyle="#22c55e";ctx.fillRect(p.x,0,48,p.top);ctx.fillRect(p.x,p.top+p.gap,48,c.height);if(!p.passed&&p.x+48<bird.x){p.passed=true;passed++;score=passed;setScore(score)}if(bird.x+12>p.x&&bird.x-12<p.x+48&&(bird.y-12<p.top||bird.y+12>p.top+p.gap))gameOver("Столкновение",score)});pipes=pipes.filter(p=>p.x>-60);ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(bird.x,bird.y,13,0,Math.PI*2);ctx.fill();frame++;if(bird.y<0||bird.y>c.height)gameOver("Игра окончена",score);else animation=requestAnimationFrame(draw)}draw()}
 
-/* ==================== SHOOT ==================== */
-function startShoot(){setTitle("🎯 Тир");setTip("Попадай по мишени");document.getElementById("gameContent").innerHTML=`<div id="shootArea" style="position:relative;width:100%;height:500px;border-radius:28px;overflow:hidden;background:radial-gradient(circle,#182342,#080c18)"></div>`;const area=document.getElementById("shootArea");let hits=0,shots=0;function target(){const b=document.createElement("button");b.textContent="🎯";b.style.cssText="position:absolute;border:0;background:transparent;font-size:50px";b.style.left=Math.random()*Math.max(1,area.clientWidth-65)+"px";b.style.top=Math.random()*Math.max(1,area.clientHeight-65)+"px";b.onclick=()=>{hits++;shots++;score=hits*100;setScore(score);b.remove();target();haptic()};area.appendChild(b);setTimeout(()=>{if(b.isConnected){b.remove();shots++}},1200)}for(let i=0;i<3;i++)target();area.onclick=()=>{shots++;if(shots>=20)gameOver("🎯 Серия завершена",score)}}
+function startRunner(){setTitle("🏃 Runner");setTip("Тап = прыжок");document.getElementById("gameContent").innerHTML=`<canvas id="rn" class="game-canvas"></canvas>`;const c=document.getElementById("rn"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.35;let player={x:60,y:c.height-70,vy:0,g:true},obs=[],frame=0;c.ontouchstart=e=>{e.preventDefault();if(player.g){player.vy=-11;player.g=false;haptic()}};function draw(){if(currentGame!=="runner")return;ctx.fillStyle="#0a1020";ctx.fillRect(0,0,c.width,c.height);player.vy+=0.55;player.y+=player.vy;if(player.y>=c.height-70){player.y=c.height-70;player.vy=0;player.g=true}if(frame%75===0)obs.push({x:c.width,y:c.height-65,w:22,h:35});obs.forEach(o=>{o.x-=5.5;ctx.fillStyle="#f43f5e";ctx.fillRect(o.x,o.y,o.w,o.h);if(player.x+14>o.x&&player.x-14<o.x+o.w&&player.y+18>o.y)gameOver("Препятствие!",score)});obs=obs.filter(o=>o.x>-40);if(frame%8===0){score++;setScore(score)}ctx.fillStyle="#6366f1";ctx.beginPath();ctx.arc(player.x,player.y,16,0,Math.PI*2);ctx.fill();ctx.fillStyle="#22d3ee";ctx.fillRect(0,c.height-48,c.width,3);frame++;animation=requestAnimationFrame(draw)}draw()}
 
-/* ==================== MATH ==================== */
-function startMath(){setTitle("🧮 Математика");setTip("Решай примеры как можно быстрее");mathRound()}
-function mathRound(){const a=Math.floor(Math.random()*30)+1,b=Math.floor(Math.random()*30)+1;const ops=["+","-","×"];const op=ops[Math.floor(Math.random()*ops.length)];let answer;if(op==="+")answer=a+b;if(op==="-")answer=a-b;if(op==="×")answer=a*b;const options=new Set([answer]);while(options.size<4)options.add(answer+Math.floor(Math.random()*21)-10);const arr=[...options].sort(()=>Math.random()-.5);document.getElementById("gameContent").innerHTML=`<div class="math-question">${a} ${op} ${b} = ?</div><div class="math-options">${arr.map(v=>`<button onclick="mathAnswer(${v},${answer})">${v}</button>`).join("")}</div>`}
-function mathAnswer(value,answer){if(value===answer){score+=100;setScore(score);haptic();mathRound()}else gameOver("🧮 Ошибка",score)}
+function startReaction(){setTitle("⚡ Реакция");setTip("Жди зелёный");document.getElementById("gameContent").innerHTML=`<div id="rb" style="min-height:400px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;background:#1e293b">ЖДИ...</div>`;const box=document.getElementById("rb");let start=0,ready=false;gameTimer=setTimeout(()=>{ready=true;start=performance.now();box.textContent="🔥 ЖМИ!";box.style.background="linear-gradient(135deg,#22c55e,#16a34a)";haptic("medium")},1500+Math.random()*2800);box.onclick=()=>{if(!ready){clearTimers();box.textContent="Слишком рано";setTimeout(startReaction,700);return}const ms=Math.round(performance.now()-start);setScore(ms);gameOver(ms<280?"Молния!":"Результат",Math.max(1,1000-ms))}}
 
-/* ==================== LIGHTS ==================== */
-function startLights(){setTitle("💡 Lights Out");setTip("Погаси все лампы");const grid=Array(25).fill(false).map(()=>Math.random()<.5);document.getElementById("gameContent").innerHTML=`<div id="lights" class="lights"></div>`;const el=document.getElementById("lights");function render(){el.innerHTML="";grid.forEach((on,i)=>{const b=document.createElement("button");b.className="light"+(on?" on":"");b.onclick=()=>{const x=i%5,y=Math.floor(i/5);toggle(x,y);toggle(x+1,y);toggle(x-1,y);toggle(x,y+1);toggle(x,y-1);score++;setScore(score);render();if(grid.every(v=>!v))gameOver("💡 Поле очищено!",Math.max(1,1000-score*10))};el.appendChild(b)})}function toggle(x,y){if(x<0||x>=5||y<0||y>=5)return;grid[y*5+x]=!grid[y*5+x]}render()}
+function startShoot(){setTitle("🎯 Тир");setTip("Попадай");document.getElementById("gameContent").innerHTML=`<div id="sa" style="position:relative;width:100%;height:460px;border-radius:20px;overflow:hidden;background:radial-gradient(#1e293b,#0f172a)"></div>`;const area=document.getElementById("sa");let hits=0,shots=0;function spawn(){const b=document.createElement("button");b.textContent="🎯";b.style.cssText="position:absolute;border:0;background:0;font-size:42px";b.style.left=Math.random()*Math.max(1,area.clientWidth-50)+"px";b.style.top=Math.random()*Math.max(1,area.clientHeight-50)+"px";b.onclick=()=>{hits++;shots++;score=hits*100;setScore(score);b.remove();spawn();haptic()};area.appendChild(b);setTimeout(()=>{if(b.isConnected){b.remove();shots++}},1100)}for(let i=0;i<3;i++)spawn();area.onclick=()=>{shots++;if(shots>=18)gameOver("Серия окончена",score)}}
 
-/* ==================== FIFTEEN ==================== */
-function startFifteen(){setTitle("🧩 Пятнашки");setTip("Собери числа от 1 до 15");const arr=[...Array(15)].map((_,i)=>i+1);arr.push(0);do{arr.sort(()=>Math.random()-.5)}while(!isSolvable(arr));document.getElementById("gameContent").innerHTML=`<div id="fifteen" class="fifteen"></div>`;const grid=document.getElementById("fifteen");function render(){grid.innerHTML="";arr.forEach((v,i)=>{const b=document.createElement("button");b.textContent=v||"";b.className=v?"":"empty";b.onclick=()=>{const empty=arr.indexOf(0);const x=i%4,y=Math.floor(i/4),ex=empty%4,ey=Math.floor(empty/4);if(Math.abs(x-ex)+Math.abs(y-ey)===1){[arr[i],arr[empty]]=[arr[empty],arr[i]];score++;setScore(score);render();if(arr.slice(0,15).every((v,j)=>v===j+1))gameOver("🧩 Собрано!",Math.max(1,2000-score*10))}};grid.appendChild(b)})}render()}
-function isSolvable(arr){let inv=0;for(let i=0;i<16;i++)for(let j=i+1;j<16;j++)if(arr[i]&&arr[j]&&arr[i]>arr[j])inv++;const rowFromBottom=4-Math.floor(arr.indexOf(0)/4);return (rowFromBottom%2===0)!==(inv%2===0)}
+function startMath(){setTitle("🧮 Математика");setTip("Решай");mathRound()}
+function mathRound(){const a=1+Math.floor(Math.random()*25),b=1+Math.floor(Math.random()*25);const ops=["+","-","×"];const op=ops[Math.floor(Math.random()*3)];let ans=op==="+"?a+b:op==="-"?a-b:a*b;const opts=new Set([ans]);while(opts.size<4)opts.add(ans+Math.floor(Math.random()*17)-8);const arr=[...opts].sort(()=>Math.random()-.5);document.getElementById("gameContent").innerHTML=`<div class="math-question">${a} ${op} ${b}</div><div class="math-options">${arr.map(v=>`<button onclick="mathAns(${v},${ans})">${v}</button>`).join("")}</div>`}
+function mathAns(v,a){if(v===a){score+=100;setScore(score);haptic();mathRound()}else gameOver("Ошибка",score)}
 
-/* ==================== COLOR ==================== */
-function startColor(){setTitle("🎨 Color Match");setTip("Нажми правильный цвет");colorRound()}
-function colorRound(){const colors=[["#ff4d67","Красный"],["#4d79ff","Синий"],["#35d07f","Зелёный"],["#ffd34d","Жёлтый"]];const correct=colors[Math.floor(Math.random()*colors.length)];const options=[...colors].sort(()=>Math.random()-.5);document.getElementById("gameContent").innerHTML=`<div class="color-box" style="background:${correct[0]}"></div><div style="text-align:center;font-size:20px;font-weight:900;margin-bottom:15px">${correct[1]}</div><div class="color-options">${options.map(c=>`<button style="background:${c[0]}" onclick="colorAnswer('${c[1]}','${correct[1]}')">${c[1]}</button>`).join("")}</div>`}
-function colorAnswer(value,correct){if(value===correct){score+=100;setScore(score);haptic();colorRound()}else gameOver("🎨 Неверный цвет",score)}
+function startLights(){setTitle("💡 Lights Out");setTip("Погаси всё");const grid=Array(25).fill(0).map(()=>Math.random()<.45);document.getElementById("gameContent").innerHTML=`<div class="lights" id="lg"></div>`;const el=document.getElementById("lg");function render(){el.innerHTML="";grid.forEach((on,i)=>{const b=document.createElement("button");b.className="light"+(on?" on":"");b.onclick=()=>{const x=i%5,y=Math.floor(i/5);[[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{const nx=x+dx,ny=y+dy;if(nx>=0&&nx<5&&ny>=0&&ny<5)grid[ny*5+nx]=!grid[ny*5+nx]});score++;setScore(score);render();if(grid.every(v=>!v))gameOver("Готово!",Math.max(1,900-score*8))};el.appendChild(b)})}render()}
 
-/* ==================== STACK ==================== */
-function startStack(){setTitle("🪜 Stack");setTip("Останови блок точно над предыдущим");document.getElementById("gameContent").innerHTML=`<canvas id="stack" class="game-canvas"></canvas>`;const c=document.getElementById("stack"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.45);let blocks=[{x:50,y:c.height-45,w:c.width-100}];let current={x:0,y:c.height-85,w:c.width-100,dir:1};let level=0;function draw(){if(currentGame!=="stack")return;ctx.fillStyle="#090d18";ctx.fillRect(0,0,c.width,c.height);blocks.forEach((b,i)=>{ctx.fillStyle=`hsl(${220+i*12},80%,65%)`;ctx.fillRect(b.x,b.y,b.w,30)});current.x+=current.dir*4;if(current.x+current.w>c.width||current.x<0)current.dir*=-1;ctx.fillStyle="#ff5c7a";ctx.fillRect(current.x,current.y,current.w,30);animation=requestAnimationFrame(draw)}c.addEventListener("touchstart",e=>{e.preventDefault();const last=blocks[blocks.length-1];const left=Math.max(current.x,last.x);const right=Math.min(current.x+current.w,last.x+last.w);const overlap=right-left;if(overlap<=0){gameOver("🪜 Блок упал",score);return}current={x:left,y:current.y-35,w:overlap,dir:1};blocks.push({x:left,y:current.y,w:overlap});level++;score=level*10;setScore(score);haptic();if(level>=30)gameOver("🏆 Башня построена!",score)},{passive:false});draw()}
+function startFifteen(){setTitle("🧩 Пятнашки");setTip("Собери 1-15");const arr=[...Array(15)].map((_,i)=>i+1);arr.push(0);do arr.sort(()=>Math.random()-.5);while(!isSolvable(arr));document.getElementById("gameContent").innerHTML=`<div class="fifteen" id="ft"></div>`;const g=document.getElementById("ft");function render(){g.innerHTML="";arr.forEach((v,i)=>{const b=document.createElement("button");b.textContent=v||"";b.className=v?"":"empty";b.onclick=()=>{const e=arr.indexOf(0),x=i%4,y=Math.floor(i/4),ex=e%4,ey=Math.floor(e/4);if(Math.abs(x-ex)+Math.abs(y-ey)===1){[arr[i],arr[e]]=[arr[e],arr[i]];score++;setScore(score);render();if(arr.slice(0,15).every((v,j)=>v===j+1))gameOver("Собрано!",Math.max(1,1800-score*8))}};g.appendChild(b)})}render()}
+function isSolvable(a){let inv=0;for(let i=0;i<16;i++)for(let j=i+1;j<16;j++)if(a[i]&&a[j]&&a[i]>a[j])inv++;return ((4-Math.floor(a.indexOf(0)/4))%2===0)!==(inv%2===0)}
 
-/* ==================== TAP ==================== */
-function startTap(){setTitle("👆 Tap Challenge");setTip("Нажми как можно больше за 10 секунд");let taps=0;document.getElementById("gameContent").innerHTML=`<button id="tapButton" style="width:100%;min-height:430px;border:0;border-radius:35px;color:#fff;font-size:38px;font-weight:950;background:linear-gradient(135deg,#4778ff,#814dff);box-shadow:0 25px 60px rgba(0,0,0,.45)">👆 ТАПАЙ!</button>`;const b=document.getElementById("tapButton");b.onclick=()=>{taps++;score=taps;setScore(score);b.style.transform="scale(.96)";setTimeout(()=>b.style.transform="",60)};gameTimer=setTimeout(()=>gameOver("👆 Время!",taps),10000)}
+function startColor(){setTitle("🎨 Color Match");setTip("Выбери цвет");colorRound()}
+function colorRound(){const cols=[["#ef4444","Красный"],["#3b82f6","Синий"],["#22c55e","Зелёный"],["#eab308","Жёлтый"]];const correct=cols[Math.floor(Math.random()*4)];const opts=[...cols].sort(()=>Math.random()-.5);document.getElementById("gameContent").innerHTML=`<div class="color-box" style="background:${correct[0]}"></div><div style="text-align:center;font-size:18px;font-weight:800;margin-bottom:14px">${correct[1]}</div><div class="color-options">${opts.map(c=>`<button style="background:${c[0]}" onclick="colorAns('${c[1]}','${correct[1]}')">${c[1]}</button>`).join("")}</div>`}
+function colorAns(v,c){if(v===c){score+=100;setScore(score);haptic();colorRound()}else gameOver("Неверно",score)}
 
-/* ==================== DODGE ==================== */
-function startDodge(){setTitle("🔴 Dodge");setTip("Уворачивайся от красных объектов");document.getElementById("gameContent").innerHTML=`<canvas id="dodge" class="game-canvas"></canvas>`;const c=document.getElementById("dodge"),ctx=c.getContext("2d");c.width=Math.min(window.innerWidth-36,390);c.height=Math.floor(c.width*1.5);let player={x:c.width/2,y:c.height-50},enemies=[],frame=0;c.addEventListener("touchmove",e=>{e.preventDefault();const r=c.getBoundingClientRect();player.x=e.touches[0].clientX-r.left},{passive:false});function draw(){if(currentGame!=="dodge")return;ctx.fillStyle="#080b16";ctx.fillRect(0,0,c.width,c.height);if(frame%25===0)enemies.push({x:Math.random()*c.width,y:-20,v:3+Math.random()*3});enemies.forEach(e=>{e.y+=e.v;ctx.fillStyle="#ff4d68";ctx.beginPath();ctx.arc(e.x,e.y,13,0,Math.PI*2);ctx.fill();if(Math.abs(e.x-player.x)<24&&Math.abs(e.y-player.y)<24)gameOver("🔴 Столкновение",score)});enemies=enemies.filter(e=>e.y<c.height+30);ctx.fillStyle="#5d78ff";ctx.beginPath();ctx.arc(player.x,player.y,18,0,Math.PI*2);ctx.fill();if(frame%10===0){score++;setScore(score)}frame++;animation=requestAnimationFrame(draw)}draw()}
+function startStack(){setTitle("🪜 Stack");setTip("Тап вовремя");document.getElementById("gameContent").innerHTML=`<canvas id="st" class="game-canvas"></canvas>`;const c=document.getElementById("st"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.4;let blocks=[{x:40,y:c.height-40,w:c.width-80}],cur={x:0,y:c.height-75,w:c.width-80,dir:1},lvl=0;function draw(){if(currentGame!=="stack")return;ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,c.width,c.height);blocks.forEach((b,i)=>{ctx.fillStyle=`hsl(${210+i*10},75%,60%)`;ctx.fillRect(b.x,b.y,b.w,28)});cur.x+=cur.dir*3.8;if(cur.x+cur.w>c.width||cur.x<0)cur.dir*=-1;ctx.fillStyle="#f43f5e";ctx.fillRect(cur.x,cur.y,cur.w,28);animation=requestAnimationFrame(draw)}c.ontouchstart=e=>{e.preventDefault();const last=blocks[blocks.length-1];const left=Math.max(cur.x,last.x),right=Math.min(cur.x+cur.w,last.x+last.w),ov=right-left;if(ov<=0){gameOver("Упал",score);return}cur={x:left,y:cur.y-32,w:ov,dir:1};blocks.push({x:left,y:cur.y,w:ov});lvl++;score=lvl*10;setScore(score);haptic();if(lvl>=25)gameOver("Башня!",score)};draw()}
 
-/* ==================== WORDS ==================== */
-const wordPairs=[["ЯБЛОКО",["ГРУША","ЯБЛОКО","СТУЛ","ОКНО"]],["МАШИНА",["ДОМ","КОТ","МАШИНА","РЕКА"]],["ТЕЛЕФОН",["ТЕЛЕФОН","СТОЛ","ЛЕС","ХЛЕБ"]],["СОБАКА",["СОН","СОБАКА","ВОДА","МЯЧ"]],["МОРЕ",["НЕБО","ДЕРЕВО","МОРЕ","КНИГА"]],["КНИГА",["КНИГА","МАШИНА","ОБЛАКО","СНЕГ"]]];
-function startWords(){setTitle("🔤 Слова");setTip("Выбери правильное слово");wordRound()}
-function wordRound(){const item=wordPairs[Math.floor(Math.random()*wordPairs.length)];const correct=item[0];const options=[...item[1]].sort(()=>Math.random()-.5);document.getElementById("gameContent").innerHTML=`<div class="word-question">Найди: ${correct}</div><div class="word-options">${options.map(word=>`<button onclick="wordAnswer('${word}','${correct}')">${word}</button>`).join("")}</div>`}
-function wordAnswer(value,correct){if(value===correct){score+=100;setScore(score);haptic();wordRound()}else gameOver("🔤 Ошибка",score)}
+function startTap(){setTitle("👆 Tap");setTip("10 секунд");let taps=0;document.getElementById("gameContent").innerHTML=`<button id="tb" style="width:100%;min-height:400px;border:0;border-radius:28px;font-size:34px;font-weight:900;color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed)">👆 ТАПАЙ</button>`;document.getElementById("tb").onclick=()=>{taps++;score=taps;setScore(score)};gameTimer=setTimeout(()=>gameOver("Время!",taps),10000)}
 
-document.addEventListener("touchmove",e=>{const t=e.target;if(t.closest(".game-canvas")||t.closest(".board2048"))e.preventDefault()},{passive:false});
+function startDodge(){setTitle("🔴 Dodge");setTip("Уворачивайся");document.getElementById("gameContent").innerHTML=`<canvas id="dg" class="game-canvas"></canvas>`;const c=document.getElementById("dg"),ctx=c.getContext("2d");c.width=Math.min(innerWidth-36,380);c.height=c.width*1.45;let player={x:c.width/2,y:c.height-45},enemies=[],frame=0;c.ontouchmove=e=>{e.preventDefault();player.x=e.touches[0].clientX-c.getBoundingClientRect().left};function draw(){if(currentGame!=="dodge")return;ctx.fillStyle="#080b16";ctx.fillRect(0,0,c.width,c.height);if(frame%22===0)enemies.push({x:Math.random()*c.width,y:-15,v:3+Math.random()*3});enemies.forEach(e=>{e.y+=e.v;ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(e.x,e.y,12,0,Math.PI*2);ctx.fill();if(Math.hypot(e.x-player.x,e.y-player.y)<26)gameOver("Столкновение",score)});enemies=enemies.filter(e=>e.y<c.height+20);ctx.fillStyle="#6366f1";ctx.beginPath();ctx.arc(player.x,player.y,16,0,Math.PI*2);ctx.fill();if(frame%9===0){score++;setScore(score)}frame++;animation=requestAnimationFrame(draw)}draw()}
+
+document.addEventListener("touchmove",e=>{if(e.target.closest(".game-canvas")||e.target.closest(".board2048"))e.preventDefault()},{passive:false});
 </script>
 </body>
 </html>
